@@ -82,7 +82,7 @@ Python_Ansible-Playbook/
 | lecture26-lecture32 | Infra & Docker Fundamentals | Linux/VirtualBox/Docker 실행 기반 이해 |
 | lecture33-lecture38 | k3s & Kubernetes Operations | k3s 구조와 배포/관측 패턴 이해 |
 | lecture39-lecture42 | Cloud Mapping | OpenStack/AWS 개념 매핑 |
-| lecture43-lecture45 | Capstone | 통합 배포 리허설 + 운영 Runbook 완성 |
+| lecture43-lecture45 | OpenStack Hands-on Experience | MicroStack/DevStack/Kolla Ansible 비교로 OpenStack 실체 이해 |
 
 ## 5. 강의별 파일 규칙
 
@@ -195,11 +195,11 @@ ansible-playbook -i inventories/local/hosts.ini playbooks/00_ping.yml
 - lecture41: 로컬 실습과 AWS EC2/VPC/SG 매핑
 - lecture42: ECR/ECS/EKS/IaC 확장 전략 수립
 
-### Module G: Capstone (43-45)
+### Module G: OpenStack Hands-on Experience (43-45)
 
-- lecture43: 통합 아키텍처 설계 워크숍
-- lecture44: 통합 배포 리허설과 장애 대응
-- lecture45: 최종 캡스톤: 운영 Runbook 완성
+- lecture43: OpenStack 입문 1 - MicroStack으로 Horizon과 첫 VM 체험
+- lecture44: OpenStack 입문 2 - DevStack 단일 머신 학습 흐름
+- lecture45: OpenStack 입문 3 - Kolla Ansible(Docker) 배포 방식 비교
 
 ## 9. 검증 체크 명령
 
@@ -276,7 +276,7 @@ find curriculum -maxdepth 2 -type f -name 'playbook.yml' | wc -l
 - GitOps/Argo CD/배포 표준화와 자연스럽게 연결 가능
 
 #### 45강 연계
-- `lecture06`, `lecture36`, `lecture37`, `lecture44`
+- `lecture06`, `lecture36`, `lecture37`
 
 ---
 
@@ -306,7 +306,7 @@ find curriculum -maxdepth 2 -type f -name 'playbook.yml' | wc -l
 - CodeBuild/CodePipeline/Argo CD와 비교 가능
 
 #### 45강 연계
-- `lecture01`, `lecture08`, `lecture19`, `lecture22`, `lecture24`, `lecture43`
+- `lecture01`, `lecture08`, `lecture19`, `lecture22`, `lecture24`
 
 ---
 
@@ -397,37 +397,106 @@ find curriculum -maxdepth 2 -type f -name 'playbook.yml' | wc -l
 - 운영 가시화/장애대응/알람 설계로 확장 가능
 
 #### 45강 연계
-- `lecture03`, `lecture07`, `lecture16`, `lecture17`, `lecture18`, `lecture25`, `lecture38`, `lecture45`
+- `lecture03`, `lecture07`, `lecture16`, `lecture17`, `lecture18`, `lecture25`, `lecture38`
 
 ---
 
-### 12-7. OpenStack DevStack 또는 MicroStack 연계
+### 12-7. OpenStack 입문 체험 (MicroStack/DevStack/Kolla Ansible)
 
 #### 학습 목적
-- Docker/k3s/Ansible 실습에 OpenStack 체험을 결합
-- AWS 입문 전 IaaS 계층 이해 강화
+- 입문자 기준으로 가장 가볍게 OpenStack 실체를 확인하는 순서를 익힌다.
+- Horizon에서 보이는 리소스 화면과 백엔드 서비스(Nova/Neutron/Cinder)를 연결한다.
+- VM 방식과 Docker+Ansible 방식의 차이를 이해하고 목적에 맞게 선택한다.
 
-#### 학습 내용
-- DevStack/MicroStack 개념
-- VM/이미지/네트워크/프로젝트/콘솔
-- Neutron/Horizon 실환경 매핑
+#### 입문자 추천 결론
+- 가장 쉬움: **MicroStack**
+- 학습/개발용 표준: **DevStack**
+- Docker 관점 비교 학습: **Kolla Ansible**
 
-#### 실습 예시
-- 단일 노드 DevStack 또는 MicroStack
-- 이미지 등록, 네트워크/인스턴스 생성, Floating IP 연결
-- Horizon 로그인/리소스 확인
+#### 먼저 무엇이 보이는가 (Horizon 기준)
+- Projects
+- Instances
+- Images
+- Networks
+- Routers
+- Floating IPs
+- Volumes
 
-#### 개발자 관점
-- 백엔드: VM/컨테이너 차이와 인프라 계층 이해
-- 프론트엔드: 콘솔 기반 리소스 관리 흐름 시각적 이해
+위 화면을 먼저 본 다음, 백엔드 서비스를 연결해서 이해하면 빠릅니다.
 
-#### AWS 연결 포인트
-- OpenStack은 EC2/VPC/EBS 개념 학습을 돕는 로컬 모델
-- Horizon은 AWS Console 유사 운영 경험
-- Neutron은 VPC/Subnet/Public IP/SG 이해 강화
+- Nova: VM 생성
+- Neutron: 네트워크/라우터/Floating IP
+- Cinder: 볼륨 생성
+- Horizon: 위 리소스를 보는 대시보드
+
+#### 방법 A - 가장 쉬운 체험: MicroStack
+
+무엇이 보이냐
+- 설치와 초기화
+- 이미지 등록
+- 네트워크 확인
+- VM 생성
+- Horizon 접속
+
+언제 적합하냐
+- OpenStack의 실체를 빠르게 눈으로 확인하고 싶을 때
+- Docker/k3s 이전 단계에서 IaaS 감각을 먼저 잡고 싶을 때
+- 멀티노드 없이 콘솔과 VM 생성 흐름만 먼저 보고 싶을 때
+
+한계
+- 프로덕션 운영 구조 학습에는 제한이 있다.
+- 목적은 운영 완성보다 입문 체험에 가깝다.
+
+#### 방법 B - 학습용 표준: DevStack
+
+무엇이 보이냐
+- OpenStack 서비스 설치/구성 과정
+- 네트워크 구성
+- Horizon
+- CLI 기반 리소스 생성
+- VM/네트워크/Floating IP
+
+언제 적합하냐
+- OpenStack 내부 구조를 더 깊게 이해하고 싶을 때
+- CLI와 설정 파일까지 포함해 학습하고 싶을 때
+
+한계
+- MicroStack보다 설치/복구가 복잡하다.
+- 대신 실패 복구 경험 자체가 학습 포인트가 된다.
+
+#### 방법 C - Docker 느낌: Kolla Ansible
+
+핵심 포인트
+- OpenStack 앱 하나를 Docker로 띄우는 것이 아니라, OpenStack 구성 서비스들을 컨테이너로 배포한다.
+
+무엇이 보이냐
+- `keystone`, `nova-api`, `neutron-server`, `glance-api`, `horizon`
+- `mariadb`, `rabbitmq`, `memcached`
+
+언제 적합하냐
+- Docker/Ansible 경험이 있고, 서비스 묶음 구조를 컨테이너 관점으로 보고 싶을 때
+
+한계
+- 입문 최소 체험에는 다소 무겁다.
+- 빠른 체험보다 배포 구조 학습에 가깝다.
+
+#### 가장 쉬운 추천 시나리오
+1. VirtualBox + Ubuntu 1대
+2. MicroStack 설치
+3. Horizon 로그인
+4. 이미지/네트워크/인스턴스/Floating IP 확인
+5. 필요 시 DevStack, Kolla Ansible 순으로 확장
+
+#### 공식 문서 기준 참고 링크
+- MicroStack single-node quickstart: <https://canonical.com/microstack/docs/single-node>
+- MicroStack 개요 문서: <https://canonical.com/microstack/docs>
+- DevStack latest docs: <https://docs.openstack.org/devstack/latest/>
+- OpenStack Install Guide (launch instance): <https://docs.openstack.org/install-guide/launch-instance.html>
+- Horizon latest docs: <https://docs.openstack.org/horizon/latest/>
+- Kolla Ansible quickstart: <https://docs.openstack.org/kolla-ansible/latest/user/quickstart.html>
 
 #### 45강 연계
-- `lecture20`, `lecture27`, `lecture39`, `lecture40`, `lecture41`
+- `lecture20`, `lecture27`, `lecture39`, `lecture40`, `lecture41`, `lecture43`, `lecture44`, `lecture45`
 
 ---
 
@@ -483,7 +552,7 @@ find curriculum -maxdepth 2 -type f -name 'playbook.yml' | wc -l
 4. GitHub Actions 기반 CI
 5. Helm Chart
 6. Prometheus / Grafana
-7. OpenStack DevStack 또는 MicroStack
+7. OpenStack 체험: MicroStack -> DevStack -> Kolla Ansible
 8. kubeadm / EKS 비교
 
 위 순서는 개발자가 빠르게 실무 감각을 얻는 흐름 기준이며, `curriculum/advanced_tracks.yml`의 `recommended_order`에도 반영되어 있습니다.

@@ -63,7 +63,7 @@ validation:
 - 핵심 태스크 결과를 debug 출력으로 확인
 advanced_integration:
   track_id: 12-7
-  track_name: OpenStack DevStack 또는 MicroStack 연계
+  track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
   track_doc: ../../curriculum/advanced_tracks.yml
   integration_objective: Horizon 콘솔 운영 흐름과 IAM 관점 학습 결과를 OpenStack DevStack 또는 MicroStack
     연계 확장 시나리오와 연결한다.

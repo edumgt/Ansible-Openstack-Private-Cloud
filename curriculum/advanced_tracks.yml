@@ -125,25 +125,89 @@ advanced_tracks:
     - CloudWatch, Managed Prometheus, Managed Grafana와 연결 가능
     - 장애대응/알람 설계 개념으로 확장 가능
   - id: 12-7
-    name: OpenStack DevStack 또는 MicroStack 연계
+    name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
     learning_purpose:
-    - Docker/k3s/Ansible 실습에 OpenStack 체험을 접목한다.
-    - AWS 입문 전 프라이빗 클라우드 IaaS 계층을 명확히 이해한다.
+    - 입문자 기준으로 OpenStack을 가장 가볍게 체험하는 순서를 익힌다.
+    - Horizon에서 실제로 보이는 리소스와 백엔드 서비스(Nova/Neutron/Cinder)를 연결한다.
+    - MicroStack, DevStack, Kolla Ansible 중 목적에 맞는 방식을 선택할 수 있다.
     learning_topics:
-    - DevStack/MicroStack 개념
-    - VM, 이미지, 네트워크, 프로젝트, 콘솔 개념
-    - Neutron/Horizon 실환경 매핑
+    - 'Horizon에서 보이는 메뉴: Instances, Images, Networks, Routers, Floating IPs, Volumes'
+    - '서비스 역할 연결: Nova(컴퓨트), Neutron(네트워크), Cinder(블록 스토리지), Horizon(UI)'
+    - '입문 체험 순서: MicroStack -> DevStack -> Kolla Ansible'
+    - '배포 방식 비교: 단일 VM 방식, 개발용 스크립트 방식, 컨테이너+Ansible 방식'
     practice_examples:
-    - 단일 노드 DevStack 또는 MicroStack 실습
-    - 네트워크/인스턴스/Floating IP 구성
-    - Horizon 로그인 및 리소스 확인
+    - MicroStack 단일 노드 설치 후 첫 VM과 Horizon 접속
+    - DevStack 단일 머신 설치 후 provider/self-service 네트워크와 인스턴스 생성
+    - Kolla Ansible all-in-one 배포 후 docker ps로 keystone/nova/neutron/horizon 서비스 확인
     developer_view:
-      backend: VM과 컨테이너 차이, 인프라 계층 이해
-      frontend: 콘솔 기반 리소스 관리와 네트워크 분리 구조 시각적 이해
+      backend: VM 생성/네트워크/볼륨이 각각 어떤 제어 평면 서비스로 처리되는지 추적 가능
+      frontend: Horizon 콘솔을 통해 리소스 상태를 시각적으로 확인하고 AWS Console과 대응 가능
     aws_links:
-    - OpenStack은 EC2/VPC/EBS 개념을 내부적으로 구성한 형태와 유사
-    - Horizon은 AWS Console 유사 경험
-    - Neutron은 VPC/Subnet/Public IP/SG 이해 강화
+    - Horizon 화면 흐름은 AWS Console(EC2/VPC/EBS) 탐색 방식과 유사
+    - Neutron 라우터/네트워크/보안그룹은 VPC/Subnet/Route/SG 이해 강화에 직접적
+    - Kolla Ansible은 OpenStack 제어평면을 컨테이너/Ansible로 운영하는 관점을 제공
+    beginner_path:
+      step1: 'MicroStack: 가장 빠르게 Horizon과 VM 생성 흐름 체험'
+      step2: 'DevStack: 서비스 구성과 CLI 중심의 설치/문제해결 경험'
+      step3: 'Kolla Ansible: OpenStack 서비스를 컨테이너로 배포/운영 관점 체험'
+    what_you_will_see:
+      horizon:
+      - Projects
+      - Instances
+      - Images
+      - Networks
+      - Routers
+      - Floating IPs
+      - Volumes
+      service_mapping:
+      - Nova = VM 생성
+      - Neutron = 네트워크/라우터/Floating IP
+      - Cinder = 볼륨
+      - Horizon = 위 리소스를 보는 대시보드
+      kolla_containers_examples:
+      - keystone
+      - nova-api
+      - neutron-server
+      - glance-api
+      - horizon
+      - mariadb
+      - rabbitmq
+      - memcached
+    official_docs:
+    - title: MicroStack Single-node quickstart
+      url: https://canonical.com/microstack/docs/single-node
+      note: openstack snap 설치 -> prepare-node -> bootstrap -> configure -> 첫 VM 실행
+    - title: OpenStack Horizon (latest docs)
+      url: https://docs.openstack.org/horizon/latest/
+      note: Horizon은 OpenStack 대시보드의 canonical implementation
+    - title: OpenStack DevStack (latest docs)
+      url: https://docs.openstack.org/devstack/latest/
+      note: 최신 git 기반 OpenStack 개발/테스트 환경을 빠르게 구성
+    - title: OpenStack Install Guide - Launch instance
+      url: https://docs.openstack.org/install-guide/launch-instance.html
+      note: provider/self-service network, key pair, security group 후 인스턴스 생성 흐름
+    - title: Kolla Ansible Quick Start (deployment/evaluation)
+      url: https://docs.openstack.org/kolla-ansible/latest/user/quickstart.html
+      note: 베어메탈/VM에 OpenStack을 컨테이너+Ansible로 배포
+    - title: Kolla Ansible project overview
+      url: https://www.openstack.org/software/releases/caracal/components/kolla-ansible
+      note: Kolla Ansible은 containerised OpenStack control plane 배포를 목표로 함
+    method_comparison:
+      microstack:
+        best_for: 가장 빠른 입문 체험
+        how_it_feels: 단일 Ubuntu 머신에서 Horizon/VM까지 바로 확인
+        difficulty: 낮음
+        tradeoff: 실운영 멀티노드 구조 학습에는 제한
+      devstack:
+        best_for: 학습/개발용 표준 체험
+        how_it_feels: 서비스 설치/구성/CLI 흐름을 깊게 체험
+        difficulty: 중간
+        tradeoff: 실패 복구/재설정까지 학습해야 함
+      kolla_ansible:
+        best_for: Docker+Ansible 관점의 OpenStack 배포 구조 학습
+        how_it_feels: OpenStack 서비스가 컨테이너 단위로 어떻게 구성되는지 확인
+        difficulty: 중상
+        tradeoff: 입문 최소 체험 용도만으로는 과할 수 있음
   - id: 12-8
     name: k3s 대신 kubeadm 또는 managed EKS 확장 비교
     learning_purpose:

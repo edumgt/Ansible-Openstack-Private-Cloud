@@ -1,18 +1,19 @@
 lecture:
   id: lecture44
   order: 44
-  title: 통합 배포 리허설과 장애 대응
-  module: capstone
-  level: advanced
+  title: 'OpenStack 입문 2: DevStack 단일 머신 학습 흐름'
+  module: openstack_experience
+  level: intermediate
   duration_minutes: 120
   tags:
-  - capstone
-  - rehearsal
+  - openstack
+  - devstack
+  - single-node
 prerequisites:
 - lecture43 완료 또는 동등한 실무 경험
 - Linux 기본 명령어(ls, cat, systemctl) 사용 가능
 learning_objectives:
-- 통합 배포 리허설과 장애 대응 주제를 Ansible 중심으로 설명할 수 있다.
+- 'OpenStack 입문 2: DevStack 단일 머신 학습 흐름 주제를 Ansible 중심으로 설명할 수 있다.'
 - 강의별 설치 및 점검 절차를 YAML 문서 기반으로 수행할 수 있다.
 - 실습 결과를 AI 코치 프롬프트로 리뷰하고 개선할 수 있다.
 curriculum:
@@ -24,14 +25,15 @@ curriculum:
   - '회고 20분: AI와 함께 오류 원인/개선안 정리'
 tech_stack:
   required:
-  - ansible
-  - docker
-  - k3s
-  - aws-mapping
+  - devstack
+  - openstack-cli
+  - nova
+  - neutron
+  - cinder
   optional:
-  - observability
-  - runbook
-  - ci-cd
+  - horizon
+  - systemd
+  - journalctl
 installation_plan:
   target_inventory: ../../inventories/local/hosts.ini
   target_host_group: all
@@ -41,19 +43,19 @@ installation_plan:
   - 강의 종료 후 상태 점검 태스크로 검증
   packages:
   - python3
-  - docker.io
-  - jq
-  - curl
   - git
+  - curl
+  - jq
 ansible_lab:
   lecture_playbook: ./playbook.yml
-  reference_playbook: ../../playbooks/12_deploy_stack_rolling.yml
+  reference_playbook: ../../playbooks/00_bootstrap.yml
   run_examples:
   - ansible-playbook -i ../../inventories/local/hosts.ini ./playbook.yml
   - ansible-playbook -i ../../inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
-  - ansible-playbook -i ../../inventories/local/hosts.ini ../../playbooks/12_deploy_stack_rolling.yml
+  - ansible-playbook -i ../../inventories/local/hosts.ini ../../playbooks/00_bootstrap.yml
 ai_pairing:
-  pre_lab_prompt: 통합 배포 리허설과 장애 대응 실습 전에 실패할 수 있는 지점 3개를 체크리스트로 만들어줘.
+  pre_lab_prompt: 'OpenStack 입문 2: DevStack 단일 머신 학습 흐름 실습 전에 실패할 수 있는 지점 3개를 체크리스트로
+    만들어줘.'
   during_lab_prompt: 현재 실행 로그를 보고 원인-증상-조치 순서로 트러블슈팅 가이드를 작성해줘.
   retrospective_prompt: 이번 강의에서 배운 자동화 패턴을 다음 강의에 재사용할 수 있게 YAML 템플릿으로 정리해줘.
 deliverables:
@@ -63,17 +65,18 @@ validation:
 - playbook syntax error 없음
 - 핵심 태스크 결과를 debug 출력으로 확인
 advanced_integration:
-  track_id: 12-2
-  track_name: Helm Chart 추가
+  track_id: 12-7
+  track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
   track_doc: ../../curriculum/advanced_tracks.yml
-  integration_objective: 통합 배포 리허설과 장애 대응 학습 결과를 Helm Chart 추가 확장 시나리오와 연결한다.
+  integration_objective: 'OpenStack 입문 2: DevStack 단일 머신 학습 흐름 학습 결과를 OpenStack 입문
+    체험(MicroStack/DevStack/Kolla Ansible) 시나리오와 연결한다.'
   addon_practice:
-  - backend/frontend Helm Chart 작성
-  - replica, image tag, environment 값 변경 실습
+  - DevStack 단일 머신 설치 후 provider/self-service 네트워크 확인
+  - CLI로 인스턴스/네트워크/라우터/Floating IP 생성
   developer_view:
-    backend: DB 접속정보, replica, tag 버전 관리 자동화
-    frontend: API endpoint, ingress host, static 서비스 설정 관리
-  aws_bridge: Helm은 EKS 운영에서 가장 자주 접하는 패키지형 배포 도구
+    backend: 서비스 설치/실패/재시작 과정을 통해 제어 평면 구조를 체감
+    frontend: Horizon과 CLI 결과를 비교해 리소스 상태 해석 능력 강화
+  aws_bridge: Horizon 메뉴와 Nova/Neutron/Cinder 흐름을 AWS Console/EC2/VPC/EBS로 대응해 본다.
   recommended_advanced_order:
   - 12-1
   - 12-5
@@ -83,5 +86,5 @@ advanced_integration:
   - 12-6
   - 12-7
   - 12-8
-  ai_extension_prompt: 현재 강의(통합 배포 리허설과 장애 대응) 결과를 Helm Chart 추가 실습으로 확장하는 체크리스트를
-    YAML로 작성해줘.
+  ai_extension_prompt: '현재 강의(OpenStack 입문 2: DevStack 단일 머신 학습 흐름) 결과를 MicroStack/DevStack/Kolla
+    Ansible 비교표로 작성해줘.'

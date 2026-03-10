@@ -1,18 +1,19 @@
 lecture:
   id: lecture43
   order: 43
-  title: 통합 아키텍처 설계 워크숍
-  module: capstone
-  level: advanced
+  title: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험'
+  module: openstack_experience
+  level: beginner
   duration_minutes: 120
   tags:
-  - capstone
-  - architecture
+  - openstack
+  - microstack
+  - horizon
 prerequisites:
 - lecture42 완료 또는 동등한 실무 경험
 - Linux 기본 명령어(ls, cat, systemctl) 사용 가능
 learning_objectives:
-- 통합 아키텍처 설계 워크숍 주제를 Ansible 중심으로 설명할 수 있다.
+- 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험 주제를 Ansible 중심으로 설명할 수 있다.'
 - 강의별 설치 및 점검 절차를 YAML 문서 기반으로 수행할 수 있다.
 - 실습 결과를 AI 코치 프롬프트로 리뷰하고 개선할 수 있다.
 curriculum:
@@ -24,14 +25,14 @@ curriculum:
   - '회고 20분: AI와 함께 오류 원인/개선안 정리'
 tech_stack:
   required:
-  - ansible
-  - docker
-  - k3s
-  - aws-mapping
+  - microstack
+  - horizon
+  - nova
+  - neutron
   optional:
-  - observability
-  - runbook
-  - ci-cd
+  - openstack-cli
+  - virtualbox
+  - ubuntu
 installation_plan:
   target_inventory: ../../inventories/local/hosts.ini
   target_host_group: all
@@ -41,19 +42,19 @@ installation_plan:
   - 강의 종료 후 상태 점검 태스크로 검증
   packages:
   - python3
-  - docker.io
-  - jq
+  - snapd
   - curl
-  - git
+  - jq
 ansible_lab:
   lecture_playbook: ./playbook.yml
-  reference_playbook: ../../playbooks/11_deploy_stack.yml
+  reference_playbook: ../../playbooks/00_ping.yml
   run_examples:
   - ansible-playbook -i ../../inventories/local/hosts.ini ./playbook.yml
   - ansible-playbook -i ../../inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
-  - ansible-playbook -i ../../inventories/local/hosts.ini ../../playbooks/11_deploy_stack.yml
+  - ansible-playbook -i ../../inventories/local/hosts.ini ../../playbooks/00_ping.yml
 ai_pairing:
-  pre_lab_prompt: 통합 아키텍처 설계 워크숍 실습 전에 실패할 수 있는 지점 3개를 체크리스트로 만들어줘.
+  pre_lab_prompt: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험 실습 전에 실패할 수 있는 지점
+    3개를 체크리스트로 만들어줘.'
   during_lab_prompt: 현재 실행 로그를 보고 원인-증상-조치 순서로 트러블슈팅 가이드를 작성해줘.
   retrospective_prompt: 이번 강의에서 배운 자동화 패턴을 다음 강의에 재사용할 수 있게 YAML 템플릿으로 정리해줘.
 deliverables:
@@ -63,17 +64,18 @@ validation:
 - playbook syntax error 없음
 - 핵심 태스크 결과를 debug 출력으로 확인
 advanced_integration:
-  track_id: 12-3
-  track_name: GitHub Actions 기반 CI 추가
+  track_id: 12-7
+  track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
   track_doc: ../../curriculum/advanced_tracks.yml
-  integration_objective: 통합 아키텍처 설계 워크숍 학습 결과를 GitHub Actions 기반 CI 추가 확장 시나리오와 연결한다.
+  integration_objective: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험 학습 결과를 OpenStack
+    입문 체험(MicroStack/DevStack/Kolla Ansible) 시나리오와 연결한다.'
   addon_practice:
-  - backend push 시 테스트 실행
-  - 추후 ECR push 확장 가능한 workflow 설계
+  - MicroStack 단일 노드 설치 후 첫 VM 생성
+  - Horizon 로그인 후 Instances/Networks/Floating IPs 확인
   developer_view:
-    backend: merge 시 자동 테스트/빌드 파이프라인 이해
-    frontend: 빌드 결과물 생성과 배포 자동화 이해
-  aws_bridge: GitHub Actions -> ECR push -> ECS/EKS 배포 흐름으로 확장 가능
+    backend: VM 생성과 네트워크 생성이 어떤 제어 서비스와 연결되는지 파악
+    frontend: Horizon 화면에서 리소스 관계를 시각적으로 빠르게 이해
+  aws_bridge: Horizon 메뉴와 Nova/Neutron/Cinder 흐름을 AWS Console/EC2/VPC/EBS로 대응해 본다.
   recommended_advanced_order:
   - 12-1
   - 12-5
@@ -83,5 +85,5 @@ advanced_integration:
   - 12-6
   - 12-7
   - 12-8
-  ai_extension_prompt: 현재 강의(통합 아키텍처 설계 워크숍) 결과를 GitHub Actions 기반 CI 추가 실습으로 확장하는
-    체크리스트를 YAML로 작성해줘.
+  ai_extension_prompt: '현재 강의(OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험) 결과를 MicroStack/DevStack/Kolla
+    Ansible 비교표로 작성해줘.'

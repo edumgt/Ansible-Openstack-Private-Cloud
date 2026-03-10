@@ -1,40 +1,36 @@
----
-- name: "최종 캡스톤: 운영 Runbook 완성"
+- name: 'OpenStack 입문 3: Kolla Ansible(Docker) 배포 방식 비교'
   hosts: all
   become: true
   gather_facts: true
   vars:
-    lecture_id: "lecture45"
-    lecture_title: "최종 캡스톤: 운영 Runbook 완성"
+    lecture_id: lecture45
+    lecture_title: 'OpenStack 입문 3: Kolla Ansible(Docker) 배포 방식 비교'
     install_enabled: false
-    reference_playbook: "../../playbooks/docker_report.yml"
+    reference_playbook: ../../playbooks/10_docker_engine_install.yml
     lecture_packages:
-      - python3
-      - docker.io
-      - jq
-      - curl
-      - git
+    - python3
+    - docker.io
+    - curl
+    - jq
+    - ansible-core
   tasks:
-    - name: Show lecture context
-      ansible.builtin.debug:
-        msg:
-          - "id={{ lecture_id }}"
-          - "title={{ lecture_title }}"
-          - "reference_playbook={{ reference_playbook }}"
-          - "install_enabled={{ install_enabled }}"
-
-    - name: Install lecture packages when enabled
-      ansible.builtin.package:
-        name: "{{ lecture_packages }}"
-        state: present
-      when: install_enabled | bool
-
-    - name: Check Python3 availability
-      ansible.builtin.command: python3 --version
-      register: python_version
-      changed_when: false
-      failed_when: false
-
-    - name: Print Python3 version
-      ansible.builtin.debug:
-        var: python_version.stdout
+  - name: Show lecture context
+    ansible.builtin.debug:
+      msg:
+      - id={{ lecture_id }}
+      - title={{ lecture_title }}
+      - reference_playbook={{ reference_playbook }}
+      - install_enabled={{ install_enabled }}
+  - name: Install lecture packages when enabled
+    ansible.builtin.package:
+      name: '{{ lecture_packages }}'
+      state: present
+    when: install_enabled | bool
+  - name: Check Python3 availability
+    ansible.builtin.command: python3 --version
+    register: python_version
+    changed_when: false
+    failed_when: false
+  - name: Print Python3 version
+    ansible.builtin.debug:
+      var: python_version.stdout

@@ -1,40 +1,35 @@
----
-- name: "통합 아키텍처 설계 워크숍"
+- name: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험'
   hosts: all
   become: true
   gather_facts: true
   vars:
-    lecture_id: "lecture43"
-    lecture_title: "통합 아키텍처 설계 워크숍"
+    lecture_id: lecture43
+    lecture_title: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험'
     install_enabled: false
-    reference_playbook: "../../playbooks/11_deploy_stack.yml"
+    reference_playbook: ../../playbooks/00_ping.yml
     lecture_packages:
-      - python3
-      - docker.io
-      - jq
-      - curl
-      - git
+    - python3
+    - snapd
+    - curl
+    - jq
   tasks:
-    - name: Show lecture context
-      ansible.builtin.debug:
-        msg:
-          - "id={{ lecture_id }}"
-          - "title={{ lecture_title }}"
-          - "reference_playbook={{ reference_playbook }}"
-          - "install_enabled={{ install_enabled }}"
-
-    - name: Install lecture packages when enabled
-      ansible.builtin.package:
-        name: "{{ lecture_packages }}"
-        state: present
-      when: install_enabled | bool
-
-    - name: Check Python3 availability
-      ansible.builtin.command: python3 --version
-      register: python_version
-      changed_when: false
-      failed_when: false
-
-    - name: Print Python3 version
-      ansible.builtin.debug:
-        var: python_version.stdout
+  - name: Show lecture context
+    ansible.builtin.debug:
+      msg:
+      - id={{ lecture_id }}
+      - title={{ lecture_title }}
+      - reference_playbook={{ reference_playbook }}
+      - install_enabled={{ install_enabled }}
+  - name: Install lecture packages when enabled
+    ansible.builtin.package:
+      name: '{{ lecture_packages }}'
+      state: present
+    when: install_enabled | bool
+  - name: Check Python3 availability
+    ansible.builtin.command: python3 --version
+    register: python_version
+    changed_when: false
+    failed_when: false
+  - name: Print Python3 version
+    ansible.builtin.debug:
+      var: python_version.stdout
