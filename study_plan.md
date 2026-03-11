@@ -1,11 +1,11 @@
-# 45강 주차별 학습 체크리스트
+# 45강 주차별 학습 체크리스트 (강의당 60분)
 
-이 문서는 `README.md`의 전체 학습 로드맵을 실습용 체크리스트로 옮긴 실행 문서입니다.
+이 문서는 `README.md`의 전체 학습 로드맵을 실행용 체크리스트로 정리한 문서입니다.
 
 ## 1. 사용 방법
 
 - 한 주에 5강씩 진행합니다. (`9주 x 5강 = 45강`)
-- 각 강의는 아래 순서로 실행합니다.
+- 각 강의는 60분 기준으로 진행합니다.
 - `curriculum/lectureNN/README.md` 확인
 - `curriculum/lectureNN/playbook.yml` 실행
 - 실행 로그 1개 + 회고 노트 1개 저장
@@ -49,7 +49,7 @@ ansible-playbook -i inventories/local/hosts.ini curriculum/lectureNN/playbook.ym
 - [ ] lecture13 Compose 스택 배포 자동화
 - [ ] lecture14 Rolling Update 배포 실습
 - [ ] lecture15 Blue/Green 전환 자동화
-- [ ] 운영 자동화 태스크 재실행으로 idempotency 확인
+- [ ] 자동화 태스크 재실행으로 idempotency 확인
 - [ ] 회고 노트 5개 작성
 
 ## Week 4 (lecture16~lecture20)
@@ -69,47 +69,47 @@ ansible-playbook -i inventories/local/hosts.ini curriculum/lectureNN/playbook.ym
 - [ ] lecture23 S3 버킷 생성/정책 자동화
 - [ ] lecture24 AWS 출력값 수집과 결과 정리
 - [ ] lecture25 AWS 실습 자원 정리 자동화
-- [ ] AWS 생성/정리 전체 플로우 1회 재검증
+- [ ] OpenStack 전환 준비 체크리스트 작성
 - [ ] 회고 노트 5개 작성
 
 ## Week 6 (lecture26~lecture30)
 
-- [ ] lecture26 Linux 운영 기본기: 프로세스/로그/서비스
-- [ ] lecture27 VirtualBox 네트워크: NAT/Host-only/Bridged
-- [ ] lecture28 Docker 기초: 이미지/컨테이너/레지스트리
-- [ ] lecture29 백엔드 컨테이너 실행 흐름 이해
-- [ ] lecture30 프론트엔드 정적 배포와 Nginx 연동
-- [ ] Linux/네트워크 핵심 명령어 정리
+- [ ] lecture26 OpenStack 개요와 아키텍처 서비스 맵
+- [ ] lecture27 OpenStack 인증(Keystone)과 프로젝트 구조 자동화
+- [ ] lecture28 OpenStack CLI 환경 구성과 리소스 조회 자동화
+- [ ] lecture29 Glance 이미지 라이프사이클 자동화
+- [ ] lecture30 Nova 인스턴스 생성/삭제 플레이북 작성
+- [ ] OpenStack 기본 리소스 용어표 정리
 - [ ] 회고 노트 5개 작성
 
 ## Week 7 (lecture31~lecture35)
 
-- [ ] lecture31 Docker 네트워크/볼륨/데이터 영속성
-- [ ] lecture32 멀티서비스 Compose 운영 패턴
-- [ ] lecture33 k3s 아키텍처와 Kubernetes 핵심 리소스
-- [ ] lecture34 k3s 서버 노드 준비 자동화 설계
-- [ ] lecture35 k3s 에이전트 조인 자동화 설계
-- [ ] Docker/k8s는 개요/연결 중심으로 최소 실습
+- [ ] lecture31 Neutron 네트워크/서브넷 자동화
+- [ ] lecture32 Neutron 라우터/Floating IP 운영 자동화
+- [ ] lecture33 Security Group/Key Pair 표준화 자동화
+- [ ] lecture34 Cinder 볼륨 생성/연결 자동화
+- [ ] lecture35 OpenStack 자원 상태 점검 리포트 자동화
+- [ ] 네트워크/보안/스토리지 운영 체크리스트 작성
 - [ ] 회고 노트 5개 작성
 
 ## Week 8 (lecture36~lecture40)
 
-- [ ] lecture36 Deployment/Service 선언형 배포 실습
-- [ ] lecture37 Ingress와 외부 트래픽 라우팅
-- [ ] lecture38 클러스터 로그/상태 관측 기초
-- [ ] lecture39 OpenStack Neutron 네트워크 개념 매핑
-- [ ] lecture40 Horizon 콘솔 운영 흐름과 IAM 관점
-- [ ] AWS-OpenStack 리소스 매핑표 작성
+- [ ] lecture36 Horizon 운영 점검 체크리스트 자동화
+- [ ] lecture37 OpenStack 로그 수집과 장애 1차 진단
+- [ ] lecture38 OpenStack 쿼터/리소스 한도 운영 자동화
+- [ ] lecture39 OpenStack-AWS 네트워크 매핑 검증
+- [ ] lecture40 OpenStack IAM(Keystone)과 AWS IAM 매핑
+- [ ] OpenStack-AWS 매핑표 업데이트
 - [ ] 회고 노트 5개 작성
 
 ## Week 9 (lecture41~lecture45)
 
-- [ ] lecture41 로컬 실습과 AWS EC2/VPC/SG 매핑
-- [ ] lecture42 ECR/ECS/EKS/IaC 확장 전략 수립
-- [ ] lecture43 OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험
-- [ ] lecture44 OpenStack 입문 2: DevStack 단일 머신 학습 흐름
-- [ ] lecture45 OpenStack 입문 3: Kolla Ansible(Docker) 배포 방식 비교
-- [ ] OpenStack 3방식 비교표(MicroStack/DevStack/Kolla) 작성
+- [ ] lecture41 Kolla Ansible 배포 아키텍처 이해
+- [ ] lecture42 Kolla Ansible 사전점검/배포 자동화
+- [ ] lecture43 OpenStack 입문 1: MicroStack 단일노드 실습
+- [ ] lecture44 OpenStack 입문 2: DevStack API/CLI 실습
+- [ ] lecture45 OpenStack 입문 3: Kolla Ansible 운영 점검 캡스톤
+- [ ] 최종 운영 체크리스트 + 트러블슈팅 문서 정리
 - [ ] 최종 회고 노트 작성
 
 ## 4. 최종 완료 체크
@@ -117,6 +117,5 @@ ansible-playbook -i inventories/local/hosts.ini curriculum/lectureNN/playbook.ym
 - [ ] 45개 강의 실행 완료
 - [ ] 강의별 실행 로그 또는 스크린샷 확보
 - [ ] 강의별 회고 노트 완료
-- [ ] AWS/OpenStack 리소스 매핑 설명 가능
-- [ ] 다음 심화 트랙 우선순위 결정 (`12-1` ~ `12-8`)
-
+- [ ] OpenStack 핵심 서비스(Keystone/Nova/Neutron/Cinder) 설명 가능
+- [ ] Ansible 기반 OpenStack 운영 자동화 흐름 설명 가능

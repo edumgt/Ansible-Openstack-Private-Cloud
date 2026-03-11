@@ -1,18 +1,18 @@
-# lecture44 - OpenStack 입문 2: DevStack 단일 머신 학습 흐름
+# lecture44 - OpenStack 입문 2: DevStack API/CLI 실습
 
 ## 1. 강의 개요
 - 강의 번호: `44`
-- 모듈: `Module G / OpenStack Hands-on Experience`
+- 모듈: `Module F / OpenStack Hands-on Capstone`
 - 난이도: `intermediate`
-- 권장 시간: `120분`
-- 모듈 초점: MicroStack -> DevStack -> Kolla Ansible 순으로 OpenStack 실체를 체험합니다.
+- 권장 시간: `60분`
+- 모듈 초점: MicroStack/DevStack/Kolla Ansible로 OpenStack 운영 실습을 완성합니다.
 
 ## 2. 선수 조건
 - lecture43 완료 또는 동등한 실무 경험
 - Linux 기본 명령어(ls, cat, systemctl) 사용 가능
 
 ## 3. 학습 목표
-- OpenStack 입문 2: DevStack 단일 머신 학습 흐름 주제를 Ansible 중심으로 설명할 수 있다.
+- OpenStack 입문 2: DevStack API/CLI 실습 주제를 Ansible 중심으로 설명할 수 있다.
 - 강의별 설치 및 점검 절차를 YAML 문서 기반으로 수행할 수 있다.
 - 실습 결과를 AI 코치 프롬프트로 리뷰하고 개선할 수 있다.
 
@@ -33,16 +33,12 @@
 - `journalctl`
 
 ### 적용 원칙
-- 핵심 스택(Ansible/AWS/OpenStack/YAML) 중심으로 진행하며, Docker/k8s는 필요한 경우에만 보조적으로 참조합니다.
+- 핵심 스택(Ansible/OpenStack/YAML) 중심으로 진행하며, 모든 작업은 재현 가능한 자동화 절차로 정리합니다.
 
-## 5. 학습 구성
-### 이론
-- 핵심 개념 30분: 정의, 동작 원리, 실패 패턴
-- 구조 이해 20분: 현재 리포 파일/디렉터리 매핑
-
-### 실습
-- 실습 50분: lecture playbook 실행 및 결과 검증
-- 회고 20분: AI와 함께 오류 원인/개선안 정리
+## 5. 학습 흐름
+- 오프닝 5분: 목표와 검증 기준 확인
+- 핵심 작업 45분: 플레이북 실행, 결과 점검, 오류 수정
+- 마무리 10분: 실행 로그 정리와 다음 강의 연결
 
 ## 6. 설치 계획
 - 대상 인벤토리: `../../inventories/local/hosts.ini`
@@ -74,18 +70,18 @@
 - 핵심 태스크 결과를 debug 출력으로 확인
 
 ## 9. AI 페어링 가이드
-- 사전 점검 프롬프트: OpenStack 입문 2: DevStack 단일 머신 학습 흐름 실습 전에 실패할 수 있는 지점 3개를 체크리스트로 만들어줘.
+- 사전 점검 프롬프트: OpenStack 입문 2: DevStack API/CLI 실습 실습 전에 실패할 수 있는 지점 3개를 체크리스트로 만들어줘.
 - 실습 중 프롬프트: 현재 실행 로그를 보고 원인-증상-조치 순서로 트러블슈팅 가이드를 작성해줘.
 - 회고 프롬프트: 이번 강의에서 배운 자동화 패턴을 다음 강의에 재사용할 수 있게 YAML 템플릿으로 정리해줘.
 
 ## 10. 심화 연계 (선택)
 - 연계 트랙: `OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)`
-- 연계 목표: OpenStack 입문 2: DevStack 단일 머신 학습 흐름 학습 결과를 OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible) 시나리오와 연결한다.
+- 연계 목표: OpenStack 입문 2: DevStack API/CLI 실습 학습 결과를 OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible) 시나리오와 연결한다.
 ### 추가 실습
 - DevStack 단일 머신 설치 후 provider/self-service 네트워크 확인
 - CLI로 인스턴스/네트워크/라우터/Floating IP 생성
 - AWS/OpenStack 브릿지: Horizon 메뉴와 Nova/Neutron/Cinder 흐름을 AWS Console/EC2/VPC/EBS로 대응해 본다.
-- 확장 프롬프트: 현재 강의(OpenStack 입문 2: DevStack 단일 머신 학습 흐름) 결과를 MicroStack/DevStack/Kolla Ansible 비교표로 작성해줘.
+- 확장 프롬프트: 현재 강의(OpenStack 입문 2: DevStack API/CLI 실습) 결과를 MicroStack/DevStack/Kolla Ansible 비교표로 작성해줘.
 
 ## 11. 참고 파일
 - `lecture.yml`: 강의 메타데이터

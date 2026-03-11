@@ -4,7 +4,7 @@ lecture:
   title: Trivy 기반 컨테이너 취약점 점검
   module: ansible_operations
   level: intermediate
-  duration_minutes: 120
+  duration_minutes: 60
   tags:
   - ansible
   - security
@@ -16,12 +16,10 @@ learning_objectives:
 - 강의별 설치 및 점검 절차를 YAML 문서 기반으로 수행할 수 있다.
 - 실습 결과를 AI 코치 프롬프트로 리뷰하고 개선할 수 있다.
 curriculum:
-  theory:
-  - '핵심 개념 30분: 정의, 동작 원리, 실패 패턴'
-  - '구조 이해 20분: 현재 리포 파일/디렉터리 매핑'
-  practice:
-  - '실습 50분: lecture playbook 실행 및 결과 검증'
-  - '회고 20분: AI와 함께 오류 원인/개선안 정리'
+  session_flow:
+  - "오프닝 5분: 목표와 검증 기준 확인"
+  - "핵심 작업 45분: 플레이북 실행, 결과 점검, 오류 수정"
+  - "마무리 10분: 실행 로그 정리와 다음 강의 연결"
 tech_stack:
   required:
   - ansible-core

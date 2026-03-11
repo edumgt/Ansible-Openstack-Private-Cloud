@@ -4,31 +4,29 @@ course:
   total_lectures: 45
   default_inventory: ../inventories/local/hosts.ini
   policy:
-  - Ansible 학습을 선행하고 이후 Docker/k3s/AWS/OpenStack으로 확장한다.
+  - Ansible 자동화를 중심으로 OpenStack 운영 실습까지 단계적으로 확장한다.
   - 각 강의는 lecture.yml + playbook.yml 조합으로 진행한다.
+  - 모든 강의는 60분(오프닝 5분, 핵심 작업 45분, 정리 10분) 기준으로 운영한다.
   - AI 코치 프롬프트를 매 강의에서 사용해 실습 속도를 높인다.
 modules:
 - range: lecture01-lecture10
   name: Ansible Foundation
-  outcome: 인벤토리/변수/템플릿/역할 기반 자동화 기초 완성
+  outcome: 인벤토리/변수/템플릿/Role 중심 자동화 기초 확립
 - range: lecture11-lecture18
   name: Ansible Operations
-  outcome: 웹서버/컨테이너/보안 자동화 운영 패턴 습득
+  outcome: 서비스 배포/보안 점검/운영 자동화 패턴 습득
 - range: lecture19-lecture25
-  name: AWS Automation with Ansible
-  outcome: SSM/VPC/EC2/S3 생성과 정리 자동화
-- range: lecture26-lecture32
-  name: Infra & Docker Fundamentals
-  outcome: Linux, VirtualBox, Docker 실행 기반 이해
-- range: lecture33-lecture38
-  name: k3s & Kubernetes Operations
-  outcome: k3s 클러스터 구조와 배포/관측 패턴 이해
-- range: lecture39-lecture42
-  name: Cloud Mapping
-  outcome: OpenStack/AWS 개념 매핑으로 클라우드 이해 확장
+  name: Ansible Cloud Bridge
+  outcome: 클라우드 자원 자동화 경험과 OpenStack 전환 기반 확보
+- range: lecture26-lecture35
+  name: OpenStack Foundation with Ansible
+  outcome: Keystone/Glance/Nova/Neutron/Cinder 핵심 자동화 학습
+- range: lecture36-lecture42
+  name: OpenStack Operations with Ansible
+  outcome: 운영 점검/로그/쿼터/Kolla Ansible 배포 자동화 역량 강화
 - range: lecture43-lecture45
-  name: OpenStack Hands-on Experience
-  outcome: MicroStack/DevStack/Kolla Ansible 비교를 통해 OpenStack 실체를 시각적으로 이해
+  name: OpenStack Hands-on Capstone
+  outcome: MicroStack/DevStack/Kolla Ansible 실습으로 운영 관점 완성
 lectures:
 - id: lecture01
   title: Ansible 학습환경 진단과 컨트롤 노드 준비
@@ -281,18 +279,18 @@ lectures:
   advanced_track_id: 12-6
   advanced_track_name: 모니터링(Prometheus/Grafana) 추가
 - id: lecture26
-  title: 'Linux 운영 기본기: 프로세스/로그/서비스'
-  module: infra_basics
+  title: OpenStack 개요와 아키텍처 서비스 맵
+  module: openstack_foundation
   folder: ./lecture26
   lecture_file: ./lecture26/lecture.yml
   playbook_file: ./lecture26/playbook.yml
   reference_playbook: ../playbooks/00_bootstrap.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture26/playbook.yml
-  advanced_track_id: 12-6
-  advanced_track_name: 모니터링(Prometheus/Grafana) 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture27
-  title: 'VirtualBox 네트워크: NAT/Host-only/Bridged'
-  module: infra_basics
+  title: OpenStack 인증(Keystone)과 프로젝트 구조 자동화
+  module: openstack_foundation
   folder: ./lecture27
   lecture_file: ./lecture27/lecture.yml
   playbook_file: ./lecture27/playbook.yml
@@ -301,118 +299,118 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture28
-  title: 'Docker 기초: 이미지/컨테이너/레지스트리'
-  module: infra_basics
+  title: OpenStack CLI 환경 구성과 리소스 조회 자동화
+  module: openstack_foundation
   folder: ./lecture28
   lecture_file: ./lecture28/lecture.yml
   playbook_file: ./lecture28/playbook.yml
   reference_playbook: ../playbooks/10_docker_install.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture28/playbook.yml
-  advanced_track_id: 12-1
-  advanced_track_name: Docker Compose 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture29
-  title: 백엔드 컨테이너 실행 흐름 이해
-  module: infra_basics
+  title: Glance 이미지 라이프사이클 자동화
+  module: openstack_foundation
   folder: ./lecture29
   lecture_file: ./lecture29/lecture.yml
   playbook_file: ./lecture29/playbook.yml
   reference_playbook: ../playbooks/11_docker_run_nginx.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture29/playbook.yml
-  advanced_track_id: 12-5
-  advanced_track_name: PostgreSQL / Redis 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture30
-  title: 프론트엔드 정적 배포와 Nginx 연동
-  module: infra_basics
+  title: Nova 인스턴스 생성/삭제 플레이북 작성
+  module: openstack_foundation
   folder: ./lecture30
   lecture_file: ./lecture30/lecture.yml
   playbook_file: ./lecture30/playbook.yml
   reference_playbook: ../playbooks/11_deploy_stack.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture30/playbook.yml
-  advanced_track_id: 12-4
-  advanced_track_name: Nginx reverse proxy 심화
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture31
-  title: Docker 네트워크/볼륨/데이터 영속성
-  module: infra_basics
+  title: Neutron 네트워크/서브넷 자동화
+  module: openstack_foundation
   folder: ./lecture31
   lecture_file: ./lecture31/lecture.yml
   playbook_file: ./lecture31/playbook.yml
   reference_playbook: ../playbooks/11_deploy_stack.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture31/playbook.yml
-  advanced_track_id: 12-5
-  advanced_track_name: PostgreSQL / Redis 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture32
-  title: 멀티서비스 Compose 운영 패턴
-  module: infra_basics
+  title: Neutron 라우터/Floating IP 운영 자동화
+  module: openstack_foundation
   folder: ./lecture32
   lecture_file: ./lecture32/lecture.yml
   playbook_file: ./lecture32/playbook.yml
   reference_playbook: ../playbooks/12_deploy_stack_rolling.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture32/playbook.yml
-  advanced_track_id: 12-1
-  advanced_track_name: Docker Compose 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture33
-  title: k3s 아키텍처와 Kubernetes 핵심 리소스
-  module: k8s_ops
+  title: Security Group/Key Pair 표준화 자동화
+  module: openstack_foundation
   folder: ./lecture33
   lecture_file: ./lecture33/lecture.yml
   playbook_file: ./lecture33/playbook.yml
   reference_playbook: ../playbooks/12_deploy_stack_rolling.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture33/playbook.yml
-  advanced_track_id: 12-8
-  advanced_track_name: k3s 대신 kubeadm 또는 managed EKS 확장 비교
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture34
-  title: k3s 서버 노드 준비 자동화 설계
-  module: k8s_ops
+  title: Cinder 볼륨 생성/연결 자동화
+  module: openstack_foundation
   folder: ./lecture34
   lecture_file: ./lecture34/lecture.yml
   playbook_file: ./lecture34/playbook.yml
   reference_playbook: ../playbooks/10_docker_engine_install.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture34/playbook.yml
-  advanced_track_id: 12-8
-  advanced_track_name: k3s 대신 kubeadm 또는 managed EKS 확장 비교
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture35
-  title: k3s 에이전트 조인 자동화 설계
-  module: k8s_ops
+  title: OpenStack 자원 상태 점검 리포트 자동화
+  module: openstack_foundation
   folder: ./lecture35
   lecture_file: ./lecture35/lecture.yml
   playbook_file: ./lecture35/playbook.yml
   reference_playbook: ../playbooks/10_docker_engine_install.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture35/playbook.yml
-  advanced_track_id: 12-8
-  advanced_track_name: k3s 대신 kubeadm 또는 managed EKS 확장 비교
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture36
-  title: Deployment/Service 선언형 배포 실습
-  module: k8s_ops
+  title: Horizon 운영 점검 체크리스트 자동화
+  module: openstack_operations
   folder: ./lecture36
   lecture_file: ./lecture36/lecture.yml
   playbook_file: ./lecture36/playbook.yml
   reference_playbook: ../playbooks/11_deploy_stack.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture36/playbook.yml
-  advanced_track_id: 12-2
-  advanced_track_name: Helm Chart 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture37
-  title: Ingress와 외부 트래픽 라우팅
-  module: k8s_ops
+  title: OpenStack 로그 수집과 장애 1차 진단
+  module: openstack_operations
   folder: ./lecture37
   lecture_file: ./lecture37/lecture.yml
   playbook_file: ./lecture37/playbook.yml
   reference_playbook: ../playbooks/13_blue_green_switch.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture37/playbook.yml
-  advanced_track_id: 12-2
-  advanced_track_name: Helm Chart 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture38
-  title: 클러스터 로그/상태 관측 기초
-  module: k8s_ops
+  title: OpenStack 쿼터/리소스 한도 운영 자동화
+  module: openstack_operations
   folder: ./lecture38
   lecture_file: ./lecture38/lecture.yml
   playbook_file: ./lecture38/playbook.yml
   reference_playbook: ../playbooks/check_nginx.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture38/playbook.yml
-  advanced_track_id: 12-6
-  advanced_track_name: 모니터링(Prometheus/Grafana) 추가
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture39
-  title: OpenStack Neutron 네트워크 개념 매핑
-  module: cloud_mapping
+  title: OpenStack-AWS 네트워크 매핑 검증
+  module: openstack_operations
   folder: ./lecture39
   lecture_file: ./lecture39/lecture.yml
   playbook_file: ./lecture39/playbook.yml
@@ -421,8 +419,8 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture40
-  title: Horizon 콘솔 운영 흐름과 IAM 관점
-  module: cloud_mapping
+  title: OpenStack IAM(Keystone)과 AWS IAM 매핑
+  module: openstack_operations
   folder: ./lecture40
   lecture_file: ./lecture40/lecture.yml
   playbook_file: ./lecture40/playbook.yml
@@ -431,8 +429,8 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture41
-  title: 로컬 실습과 AWS EC2/VPC/SG 매핑
-  module: cloud_mapping
+  title: Kolla Ansible 배포 아키텍처 이해
+  module: openstack_operations
   folder: ./lecture41
   lecture_file: ./lecture41/lecture.yml
   playbook_file: ./lecture41/playbook.yml
@@ -441,18 +439,18 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture42
-  title: ECR/ECS/EKS/IaC 확장 전략 수립
-  module: cloud_mapping
+  title: Kolla Ansible 사전점검/배포 자동화
+  module: openstack_operations
   folder: ./lecture42
   lecture_file: ./lecture42/lecture.yml
   playbook_file: ./lecture42/playbook.yml
   reference_playbook: ../playbooks/21_aws_create_ec2.yml
   default_run: ansible-playbook -i ../inventories/local/hosts.ini ./lecture42/playbook.yml
-  advanced_track_id: 12-8
-  advanced_track_name: k3s 대신 kubeadm 또는 managed EKS 확장 비교
+  advanced_track_id: 12-7
+  advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture43
-  title: 'OpenStack 입문 1: MicroStack으로 Horizon과 첫 VM 체험'
-  module: openstack_experience
+  title: 'OpenStack 입문 1: MicroStack 단일노드 실습'
+  module: openstack_hands_on
   folder: ./lecture43
   lecture_file: ./lecture43/lecture.yml
   playbook_file: ./lecture43/playbook.yml
@@ -461,8 +459,8 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture44
-  title: 'OpenStack 입문 2: DevStack 단일 머신 학습 흐름'
-  module: openstack_experience
+  title: 'OpenStack 입문 2: DevStack API/CLI 실습'
+  module: openstack_hands_on
   folder: ./lecture44
   lecture_file: ./lecture44/lecture.yml
   playbook_file: ./lecture44/playbook.yml
@@ -471,8 +469,8 @@ lectures:
   advanced_track_id: 12-7
   advanced_track_name: OpenStack 입문 체험(MicroStack/DevStack/Kolla Ansible)
 - id: lecture45
-  title: 'OpenStack 입문 3: Kolla Ansible(Docker) 배포 방식 비교'
-  module: openstack_experience
+  title: 'OpenStack 입문 3: Kolla Ansible 운영 점검 캡스톤'
+  module: openstack_hands_on
   folder: ./lecture45
   lecture_file: ./lecture45/lecture.yml
   playbook_file: ./lecture45/playbook.yml
