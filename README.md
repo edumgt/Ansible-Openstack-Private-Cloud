@@ -1,13 +1,4 @@
-# Python Ansible Playbook: 20강 압축 커리큘럼
-
-이 저장소는 Ansible 자동화 학습을 20개 강의로 압축해, 실습 중심으로 빠르게 완주할 수 있도록 재구성한 프로젝트입니다.
-
-이번 개편에서 다음을 반영했습니다.
-- 루트 문서(`study_plan.md`, `기술스택.md`)의 핵심 내용을 `README.md`로 병합
-- 기존 45강 구조를 20강으로 함축
-- 강의 폴더를 `curriculum/` 하위가 아닌 **프로젝트 메인 폴더**로 이동 (`lecture01~lecture20`)
-- Ansible 기준 `Cloud Bridge` 구간을 메인 로드맵에서 제외하고 OpenStack 중심으로 재배치
-- 강의별 실행 절차와 검증 기준을 표준화
+# Python Ansible 기반 Openstack Private Cloud 운영
 
 ## 1. 학습 목표
 - Ansible 플레이북 작성/실행/검증 루틴을 익힌다.
