@@ -86,5 +86,37 @@
 - `lecture.yml`: 강의 메타데이터
 - `playbook.yml`: 강의 실행 플레이북
 
+
+## 12. 실행 검증 결과 (자동 수집)
+- 검증 일시: 자동 실행
+- 실행 명령: `HOME=/home/Python_Ansible-Playbook ANSIBLE_LOCAL_TEMP=/home/Python_Ansible-Playbook/.ansible/tmp ANSIBLE_REMOTE_TEMP=/tmp/.ansible/tmp ANSIBLE_BECOME_ASK_PASS=False .venv/bin/ansible-playbook -i inventories/local/hosts.ini curriculum/lecture24/playbook.yml -e install_enabled=false`
+- 검증 상태: `PASS` (exit_code=0)
+- RECAP: `localhost : ok=4 changed=0 unreachable=0 failed=0 skipped=1 rescued=0 ignored=0`
+- 올바른 예상 결과:
+  - `Gathering Facts` 성공
+  - `Show lecture context` 출력 확인
+  - `Install lecture packages when enabled`는 `install_enabled=false` 기준으로 `skipped`
+  - `Check Python3 availability`와 버전 출력 성공
+- MCR 캡처 솔루션: `docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/devcontainers/python:3.12 bash -lc 'python3 -m pip install pillow && python3 scripts/render_captures.py'`
+- 실행 로그: `results/lecture-verification/logs/lecture24.log`
+
+![lecture24 실행 캡처](../../results/lecture-verification/captures/lecture24.png)
+
+
+## 13. 실행 검증 결과 (install_enabled=true 자동 수집)
+- 검증 일시: 자동 실행
+- 실행 명령: `HOME=/home/Python_Ansible-Playbook ANSIBLE_LOCAL_TEMP=/home/Python_Ansible-Playbook/.ansible/tmp ANSIBLE_REMOTE_TEMP=/tmp/.ansible/tmp ANSIBLE_BECOME_ASK_PASS=False .venv/bin/ansible-playbook -i inventories/local/hosts.ini curriculum/lecture24/playbook.yml -e install_enabled=true`
+- 검증 상태: `FAIL` (exit_code=2)
+- RECAP: `localhost : ok=2 changed=0 unreachable=0 failed=1 skipped=0 rescued=0 ignored=0`
+- 올바른 예상 결과:
+  - `Gathering Facts` 성공
+  - `Show lecture context` 출력 확인
+  - `Install lecture packages when enabled` 단계에서 실패 확인 (패키지 미존재: `awscli`)
+  - 설치 실패가 의도된 탐지 결과인지 저장소/OS 패키지 호환성을 점검
+- MCR 캡처 솔루션: `docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/devcontainers/python:3.12 bash -lc 'python3 -m pip install pillow && python3 scripts/render_captures.py --summary results/lecture-verification-install/summary.tsv --logs results/lecture-verification-install/logs --out results/lecture-verification-install/captures --title-suffix install_enabled=true'`
+- 실행 로그: `results/lecture-verification-install/logs/lecture24.log`
+
+![lecture24 install_enabled=true 실행 캡처](../../results/lecture-verification-install/captures/lecture24.png)
+
 ---
 이 문서는 `lecture.yml`을 기준으로 생성된 강의 안내서입니다.
