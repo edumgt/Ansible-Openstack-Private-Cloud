@@ -1,0 +1,50 @@
+lecture:
+  id: lecture16
+  order: 16
+  title: 'Nova 인스턴스 라이프사이클 자동화'
+  module: openstack_foundation
+  level: intermediate
+  duration_minutes: 60
+  tags:
+  - openstack
+  - nova
+  - instance
+prerequisites:
+- lecture15 완료
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- 인스턴스 생성/조회/삭제/상태 전이 흐름을 이해한다.
+- 스케줄러/컴퓨트 역할 분리를 운영 관점으로 정리한다.
+- 실패 시 진단 포인트(API/DB/MQ)를 학습한다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/12_deploy_stack_rolling.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/12_deploy_stack_rolling.yml

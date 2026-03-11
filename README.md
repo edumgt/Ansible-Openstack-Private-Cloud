@@ -1,627 +1,183 @@
-# Python Ansible Playbook: Ansible-First 45 Lecture Curriculum
+# Python Ansible Playbook: 20강 압축 커리큘럼
 
-이 저장소는 **Ansible를 먼저 익히고**, 이후 OpenStack 운영 자동화로 확장하는 실습형 학습 저장소입니다.  
-AWS는 OpenStack 매핑을 위한 브릿지 실습으로 제한합니다.
+이 저장소는 Ansible 자동화 학습을 20개 강의로 압축해, 실습 중심으로 빠르게 완주할 수 있도록 재구성한 프로젝트입니다.
 
-핵심은 다음 3가지입니다.
-
-- `lecture01~lecture45`까지 단계형 커리큘럼
-- 각 강의 폴더에 `lecture.yml` + `playbook.yml` + `README.md` 제공
-- AI 보조 프롬프트를 활용한 실습/회고 루프
+이번 개편에서 다음을 반영했습니다.
+- 루트 문서(`study_plan.md`, `기술스택.md`)의 핵심 내용을 `README.md`로 병합
+- 기존 45강 구조를 20강으로 함축
+- 강의 폴더를 `curriculum/` 하위가 아닌 **프로젝트 메인 폴더**로 이동 (`lecture01~lecture20`)
+- Ansible 기준 `Cloud Bridge` 구간을 메인 로드맵에서 제외하고 OpenStack 중심으로 재배치
+- 강의별 실행 절차와 검증 기준을 표준화
 
 ## 1. 학습 목표
+- Ansible 플레이북 작성/실행/검증 루틴을 익힌다.
+- 인벤토리, 변수, 템플릿, Role을 재사용 가능한 형태로 설계한다.
+- 서비스 운영 자동화(Nginx, Docker)를 안정적으로 수행한다.
+- OpenStack 핵심 컴포넌트(Keystone/Glance/Nova/Neutron/Cinder) 운영 흐름을 Ansible 관점으로 이해한다.
+- 마지막 강의에서 운영 Runbook을 완성해 재현 가능한 실습 체계를 만든다.
 
-- 반복되는 서버 작업을 Ansible Playbook으로 자동화한다.
-- OpenStack 실습을 Ansible 기반 운영 관점으로 연결한다.
-- AWS는 OpenStack 개념 매핑 검증 범위로 활용한다.
-- YAML 문서 중심으로 설치/검증/회고를 일관되게 진행한다.
+## 2. 통합 기술 스택 가이드
+### 핵심 스택
+- `ansible-core`, `yaml`, `python3`, `linux`, `openstack`
 
-### 1.1 기술 스택 우선순위
+### 보조 스택
+- `docker`, `nginx`, `awscli`, `az` (비교 학습 목적)
 
-- **핵심(Primary)**: `Ansible`, `YAML`, `Python`, `Linux`, `OpenStack`
-- **보조(Secondary)**: `AWS` (매핑/브릿지 검증 중심)
+### OpenStack 컴포넌트 정리 (기술스택 문서 병합 요약)
+- `Keystone`: 인증/권한/서비스 카탈로그 (Python)
+- `Glance`: VM 이미지 관리 (Python)
+- `Nova`: 인스턴스 생성/스케줄링/컴퓨트 제어 (Python)
+- `Neutron`: 네트워크/서브넷/라우터/FIP 제어 (Python)
+- `Cinder`: 블록 스토리지 볼륨/스냅샷 관리 (Python)
+- `Horizon`: Django 기반 웹 대시보드 (Python + HTML/CSS/JS)
 
-## 2. 저장소 구조
+## 3. 20강 로드맵
+| Lecture | 모듈 | 주제 |
+|---|---|---|
+| lecture01 | Ansible Foundation | Ansible 학습환경 점검과 실행 루틴 정립 |
+| lecture02 | Ansible Foundation | Inventory/Variables 구조 설계 |
+| lecture03 | Ansible Foundation | Ad-hoc 명령과 Facts 수집 자동화 |
+| lecture04 | Ansible Foundation | Jinja2 템플릿과 Handler 실전 |
+| lecture05 | Ansible Foundation | Role 분리와 재사용 설계 |
+| lecture06 | Ansible Foundation | Idempotency와 검증 자동화 |
+| lecture07 | Ansible Operations | 사용자/권한/SSH 정책 자동화 |
+| lecture08 | Ansible Operations | Nginx 서비스 배포와 검증 |
+| lecture09 | Ansible Operations | Docker Engine 설치 자동화 |
+| lecture10 | Ansible Operations | Compose 배포와 업데이트 전략 |
+| lecture11 | OpenStack Foundation | OpenStack CLI 환경 구성과 인증 토큰 흐름 |
+| lecture12 | OpenStack Foundation | OpenStack 프로젝트/네트워크 리소스 자동화 기초 |
+| lecture13 | OpenStack Foundation | OpenStack 아키텍처와 핵심 서비스 이해 |
+| lecture14 | OpenStack Foundation | Keystone 인증/프로젝트/역할 모델 |
+| lecture15 | OpenStack Foundation | Glance 이미지 관리 자동화 |
+| lecture16 | OpenStack Foundation | Nova 인스턴스 라이프사이클 자동화 |
+| lecture17 | OpenStack Foundation | Neutron/Cinder 리소스 자동화 |
+| lecture18 | OpenStack Operations | Horizon 운영 점검과 로그 수집 |
+| lecture19 | OpenStack Operations | Kolla Ansible 배포 준비와 검증 |
+| lecture20 | OpenStack Operations | 종합 캡스톤: OpenStack 운영 Runbook 완성 |
 
+## 4. 주차별 학습 계획 (압축판)
+- Week 1: `lecture01~05` (기초 문법/구조)
+- Week 2: `lecture06~10` (운영 자동화)
+- Week 3: `lecture11~15` (OpenStack Foundation)
+- Week 4: `lecture16~20` (OpenStack 운영/캡스톤)
+
+권장 학습 시간: 강의당 60~90분
+
+## 5. 실행 방법 (상세)
+### 5.1 사전 준비
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install ansible-core
+ansible --version
+```
+
+### 5.2 강의 실행 템플릿
+```bash
+# 기본 실행 (설치 태스크 제외)
+ansible-playbook -i ansible/inventories/local/hosts.ini lectureNN/playbook.yml -e install_enabled=false
+
+# 설치 포함 실행
+ansible-playbook -i ansible/inventories/local/hosts.ini lectureNN/playbook.yml -e install_enabled=true
+```
+
+### 5.3 예시 (lecture01)
+```bash
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture01/playbook.yml -e install_enabled=false
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture01/playbook.yml -e install_enabled=true
+```
+
+### 5.4 레퍼런스 플레이북 실행
+각 강의의 `lecture.yml`에 있는 `ansible_lab.reference_playbook`을 참고해 아래처럼 실행합니다.
+```bash
+ansible-playbook -i ansible/inventories/local/hosts.ini ansible/playbooks/00_ping.yml
+```
+
+## 6. 결과 검증 체크리스트
+강의마다 아래 4가지를 남기면 재현성이 높아집니다.
+- 실행 로그 1개
+- 핵심 태스크 성공/실패 원인 정리 1개
+- 개선 포인트 1개
+- 다음 강의 연결 메모 1개
+
+## 7. 프로젝트 구조 (개편 후)
 ```text
 Python_Ansible-Playbook/
 ├── README.md
-├── ansible.cfg
-├── requirements.txt
-├── requirements.yml
-├── inventories/
-│   ├── local/
-│   ├── dev/
-│   ├── stage/
-│   ├── prod/
-│   └── aws/
-├── group_vars/
-├── playbooks/
-│   ├── 00_ping.yml
-│   ├── 00_bootstrap.yml
-│   ├── 01_users.yml
-│   ├── 02_nginx.yml
-│   ├── 03_role_web.yml
-│   ├── 10_docker_install.yml
-│   ├── 10_docker_engine_install.yml
-│   ├── 11_docker_run_nginx.yml
-│   ├── 11_deploy_stack.yml
-│   ├── 12_deploy_stack_rolling.yml
-│   ├── 13_blue_green_switch.yml
-│   ├── 20_aws_provision_ssm_no_ssh.yml
-│   ├── 20_aws_create_vpc.yml
-│   ├── 21_aws_create_ec2.yml
-│   ├── 21_post_provision_via_ssm.yml
-│   ├── 22_aws_s3_bucket.yml
-│   ├── 23_aws_cleanup.yml
-│   ├── 91_trivy_scan.yml
-│   ├── 92_docker_bench.yml
-│   ├── 93_crowdsec_nginx_lab.yml
-│   └── learning/
-├── roles/
-├── stacks/
+├── lecture01/
+├── lecture02/
+├── ...
+├── lecture20/
+├── ansible/
+│   ├── inventories/
+│   ├── playbooks/
+│   ├── roles/
+│   ├── group_vars/
+│   ├── files/
+│   └── stacks/
 ├── docs/
-└── curriculum/
-    ├── learning_path.yml
-    ├── lecture01/
-    │   ├── lecture.yml
-    │   ├── playbook.yml
-    │   └── README.md
-    ├── ...
-    └── lecture45/
-        ├── lecture.yml
-        ├── playbook.yml
-        └── README.md
+│   └── reference/
+├── scripts/
+└── archive/
+    └── legacy/
 ```
 
-## 3. 커리큘럼 운영 원칙
+## 8. 운영 메모
+- `install_enabled=true` 검증 시 OS 저장소 패키지명 차이로 실패할 수 있습니다.
+- 클라우드 실습(OpenStack/AWS/Azure 비교)은 로컬 패키지 설치와 별도로 자격증명/네트워크가 필요합니다.
+- 실패 로그를 남기고 `README`의 트러블슈팅 섹션과 함께 비교하면 학습 속도가 빨라집니다.
 
-- **Ansible 선행**: lecture01~25를 Ansible 중심으로 먼저 배치
-- **기술스택 우선순위**: Ansible/OpenStack 핵심, AWS는 브릿지로 활용
-- **YAML 중심**: 강의 정의/설치/실습은 `lecture.yml`에 명시
-- **실행 파일 분리**: 강의 실행용 `playbook.yml`과 기존 레퍼런스 플레이북을 병행
-- **AI 페어링**: 모든 강의에 `ai_pairing` 프롬프트 포함
-- **시간 고정**: 전체 45강을 강의당 60분으로 운영
+## 9. 클라우드 자동화 조합 설명 및 비교
+### 9.1 조합 설명
+- `OpenStack + Ansible`: 운영자가 원하는 상태를 playbook으로 선언하고, 여러 OpenStack 리소스를 반복 가능하게 표준화할 때 유리합니다.
+- `AWS + aws cli`: AWS 서비스별 API를 즉시 호출해 빠르게 스크립트화하거나 CI에서 단일 작업을 제어할 때 유리합니다.
+- `Azure + az`: Azure 리소스 그룹/구독 단위 운영을 CLI 중심으로 자동화하고 파이프라인과 연동할 때 유리합니다.
 
-## 4. 45강 모듈 구성
+### 9.2 비교표
+| 조합 | 자동화 방식 | 강점 | 약점 | 적합한 상황 |
+|---|---|---|---|---|
+| OpenStack + Ansible | 선언형(playbook, role) | 일관성, 재실행 안정성, 팀 표준화 | 초기 구조 설계 비용 | 사내 프라이빗 클라우드 운영 표준화 |
+| AWS + aws cli | 명령형(스크립트/파이프라인) | 빠른 실험, 서비스 기능 접근 속도 | 스크립트가 커지면 유지보수 부담 | AWS 관리 작업의 빠른 자동화 |
+| Azure + az | 명령형(스크립트/파이프라인) | 구독/리소스그룹 단위 관리가 직관적 | 대규모 반복 작업은 구조화 필요 | Azure 운영팀의 일상 작업 자동화 |
 
-| Lecture Range | Module | Outcome |
-|---|---|---|
-| lecture01-lecture10 | Ansible Foundation | 인벤토리/변수/템플릿/Role 기반 자동화 기초 완성 |
-| lecture11-lecture18 | Ansible Operations | 서비스 배포/보안 점검/운영 자동화 패턴 습득 |
-| lecture19-lecture25 | Ansible Cloud Bridge | 클라우드 자원 자동화 경험과 OpenStack 전환 기반 확보 |
-| lecture26-lecture35 | OpenStack Foundation with Ansible | Keystone/Glance/Nova/Neutron/Cinder 핵심 자동화 학습 |
-| lecture36-lecture42 | OpenStack Operations with Ansible | 운영 점검/로그/쿼터/Kolla Ansible 배포 자동화 역량 강화 |
-| lecture43-lecture45 | OpenStack Hands-on Capstone | MicroStack/DevStack/Kolla Ansible 실습으로 운영 관점 완성 |
-
-## 5. 강의별 파일 규칙
-
-각 `curriculum/lectureNN/` 폴더는 아래 파일로 구성됩니다.
-
-- `lecture.yml`: 학습 목표, 기술 스택, 설치 방안, AI 프롬프트, 참조 플레이북
-- `playbook.yml`: 강의 실습용 Ansible Playbook
-- `README.md`: 강의별 상세 설명(학습 흐름, 기술 스택 반영 포인트, 실행/검증 절차)
-
-예시: `curriculum/lecture12/`
-
-- `lecture.yml` → 강의 목표/기술스택/실습 정의
-- `playbook.yml` → 강의용 설치/검증 태스크
-- `README.md` → 강의 상세 안내 및 체크리스트
-
-## 6. 빠른 시작
-
-### 6.1 의존성 설치
-
+### 9.3 최소 예시 명령
 ```bash
-pip install -r requirements.txt
-ansible-galaxy install -r requirements.yml
+# OpenStack + Ansible
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture13/playbook.yml -e install_enabled=false
+
+# AWS + aws cli
+aws ec2 describe-instances --region ap-northeast-2
+
+# Azure + az
+az vm list -o table
 ```
 
-### 6.2 첫 강의 실행
+## 10. GitHub Actions: Docker Hub Push + Local Docker Sync
+### 10.1 추가된 파일
+- `.github/workflows/docker-publish.yml`
+- `Dockerfile`
+- `.dockerignore`
+- `scripts/sync_local_docker.sh`
 
+### 10.2 GitHub Secrets (필수)
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN` (Docker Hub Access Token)
+
+### 10.3 GitHub Variables (선택)
+- `DOCKERHUB_REPOSITORY`: 미설정 시 `python-ansible-playbook`
+- `ENABLE_LOCAL_DOCKER_SYNC`: `true`일 때 self-hosted runner에서 local docker 반영
+- `LOCAL_DOCKER_CONTAINER_NAME`: 미설정 시 `python-ansible-playbook`
+- `LOCAL_DOCKER_RUN_CMD`: 미설정 시 `tail -f /dev/null`
+
+### 10.4 동작 방식
+1. `main` 브랜치 push(또는 수동 실행) 시 Docker 이미지를 빌드해 Docker Hub로 push
+2. `ENABLE_LOCAL_DOCKER_SYNC=true`이고 self-hosted runner(`self-hosted`, `linux`, `docker`)가 있으면
+   같은 워크플로우에서 최신 이미지를 pull하고 로컬 컨테이너를 재기동
+
+### 10.5 수동 로컬 반영 (원할 때 직접 실행)
 ```bash
-ansible-playbook -i inventories/local/hosts.ini curriculum/lecture01/playbook.yml
+IMAGE=docker.io/<dockerhub-user>/<repo>:latest \
+CONTAINER_NAME=python-ansible-playbook \
+./scripts/sync_local_docker.sh
 ```
-
-실제 설치까지 수행하려면:
-
-```bash
-ansible-playbook -i inventories/local/hosts.ini curriculum/lecture01/playbook.yml -e install_enabled=true
-```
-
-### 6.3 강의 레퍼런스 플레이북 실행
-
-각 강의의 `lecture.yml -> ansible_lab.reference_playbook` 경로를 사용합니다.
-
-```bash
-ansible-playbook -i inventories/local/hosts.ini playbooks/00_ping.yml
-```
-
-## 7. 전체 학습 진행 방법
-
-1. `curriculum/learning_path.yml`에서 강의 순서 확인
-2. `curriculum/lectureNN/lecture.yml`로 목표/설치/검증 기준 확인
-3. `curriculum/lectureNN/playbook.yml` 실행
-4. `ai_pairing` 프롬프트로 트러블슈팅/회고 정리
-5. 필요 시 `reference_playbook` 실행으로 실전 플레이북과 연결
-
-## 8. 45개 Lecture 목록
-
-### Module A: Ansible Foundation (01-10)
-
-- lecture01: Ansible 학습환경 진단과 컨트롤 노드 준비
-- lecture02: Inventory 구조와 host/group 변수 설계
-- lecture03: Ad-hoc 명령과 연결 테스트 자동화
-- lecture04: 변수, facts, register 실습
-- lecture05: loop, when, block 제어문 실습
-- lecture06: Jinja2 템플릿과 설정 파일 생성
-- lecture07: handler와 idempotency 검증
-- lecture08: Role 구조 분해와 재사용 설계
-- lecture09: 공통 서버 부트스트랩 자동화
-- lecture10: 사용자/권한/SSH 정책 자동화
-
-### Module B: Ansible Operations (11-18)
-
-- lecture11: Nginx 설치와 웹 서비스 배포 자동화
-- lecture12: Docker Engine 설치 자동화
-- lecture13: Compose 스택 배포 자동화
-- lecture14: Rolling Update 배포 실습
-- lecture15: Blue/Green 전환 자동화
-- lecture16: Trivy 기반 컨테이너 취약점 점검
-- lecture17: Docker Bench 점검과 보고서 자동화
-- lecture18: CrowdSec + Nginx 보안 실습 자동화
-
-### Module C: AWS Automation with Ansible (19-25)
-
-- lecture19: AWS SSM 기반 무SSH 프로비저닝
-- lecture20: AWS VPC 네트워크 생성 자동화
-- lecture21: AWS EC2 인스턴스 생성 자동화
-- lecture22: 생성 후 SSM 기반 후속 설정 자동화
-- lecture23: S3 버킷 생성/정책 자동화
-- lecture24: AWS 출력값 수집과 결과 정리
-- lecture25: AWS 실습 자원 정리 자동화
-
-### Module D: OpenStack Foundation with Ansible (26-35)
-
-- lecture26: OpenStack 개요와 아키텍처 서비스 맵
-- lecture27: OpenStack 인증(Keystone)과 프로젝트 구조 자동화
-- lecture28: OpenStack CLI 환경 구성과 리소스 조회 자동화
-- lecture29: Glance 이미지 라이프사이클 자동화
-- lecture30: Nova 인스턴스 생성/삭제 플레이북 작성
-- lecture31: Neutron 네트워크/서브넷 자동화
-- lecture32: Neutron 라우터/Floating IP 운영 자동화
-- lecture33: Security Group/Key Pair 표준화 자동화
-- lecture34: Cinder 볼륨 생성/연결 자동화
-- lecture35: OpenStack 자원 상태 점검 리포트 자동화
-
-### Module E: OpenStack Operations with Ansible (36-42)
-
-- lecture36: Horizon 운영 점검 체크리스트 자동화
-- lecture37: OpenStack 로그 수집과 장애 1차 진단
-- lecture38: OpenStack 쿼터/리소스 한도 운영 자동화
-- lecture39: OpenStack-AWS 네트워크 매핑 검증
-- lecture40: OpenStack IAM(Keystone)과 AWS IAM 매핑
-- lecture41: Kolla Ansible 배포 아키텍처 이해
-- lecture42: Kolla Ansible 사전점검/배포 자동화
-
-### Module F: OpenStack Hands-on Capstone (43-45)
-
-- lecture43: OpenStack 입문 1 - MicroStack 단일노드 실습
-- lecture44: OpenStack 입문 2 - DevStack API/CLI 실습
-- lecture45: OpenStack 입문 3 - Kolla Ansible 운영 점검 캡스톤
-
-## 9. 검증 체크 명령
-
-```bash
-find curriculum -maxdepth 1 -type d -name 'lecture*' | wc -l
-find curriculum -maxdepth 2 -type f -name 'lecture.yml' | wc -l
-find curriculum -maxdepth 2 -type f -name 'playbook.yml' | wc -l
-```
-
-기대값은 각각 `45`, `45`, `45`입니다.
-
----
-
-## 10. 전체 학습 로드맵 (입문자 기준)
-
-아래 순서대로 진행하면 Ansible 자동화 기초부터 OpenStack 운영 자동화까지 한 흐름으로 학습할 수 있습니다.
-
-- 실행용 체크리스트 문서: `./study_plan.md`
-
-1. `lecture01~10`: Ansible 기초 문법, 인벤토리, 변수, 템플릿, Role 재사용 구조를 익힌다.
-2. `lecture11~18`: 서비스 배포/보안 점검을 Ansible 플레이북 중심으로 자동화한다.
-3. `lecture19~25`: 클라우드 자동화 경험을 통해 OpenStack 전환 기반을 준비한다.
-4. `lecture26~35`: Keystone/Glance/Nova/Neutron/Cinder를 Ansible로 자동화한다.
-5. `lecture36~42`: 운영 점검/로그/쿼터/Kolla Ansible 배포 자동화를 학습한다.
-6. `lecture43~45`: MicroStack -> DevStack -> Kolla Ansible 순서로 실습을 완성한다.
-
-### 권장 주차 편성 (예시: 9주 x 5강)
-
-- 1주차: `lecture01~05` (Ansible 기초)
-- 2주차: `lecture06~10` (템플릿/Role/정책 자동화)
-- 3주차: `lecture11~15` (서비스 배포 자동화)
-- 4주차: `lecture16~20` (보안 자동화 + 클라우드 브릿지 시작)
-- 5주차: `lecture21~25` (클라우드 자동화 브릿지 완성)
-- 6주차: `lecture26~30` (OpenStack Foundation 1)
-- 7주차: `lecture31~35` (OpenStack Foundation 2)
-- 8주차: `lecture36~40` (OpenStack 운영 자동화)
-- 9주차: `lecture41~45` (Kolla Ansible + OpenStack 캡스톤)
-
----
-
-## 11. 모듈별 핵심 성과물
-
-| Module | 학습 결과 | 대표 산출물 |
-|---|---|---|
-| A (01-10) | Ansible 플레이북/변수/Role 구조를 스스로 작성 | `lecture.yml`, `playbook.yml`, 실행 로그 |
-| B (11-18) | 운영 자동화 패턴(웹/보안) 적용 | 서비스 배포/점검 태스크, 회고 노트 |
-| C (19-25) | AWS 자원 생성/정리 자동화 | VPC/EC2/S3 실행 결과, 출력값 정리 |
-| D (26-35) | OpenStack 핵심 리소스 자동화 | 리소스 생성/검증 플레이북, 운영 로그 |
-| E (36-42) | OpenStack 운영 자동화 및 매핑 | 점검 체크리스트, 로그 분석, 매핑 문서 |
-| F (43-45) | OpenStack 실습 캡스톤 | MicroStack/DevStack/Kolla Ansible 비교 결과 |
-
-### 최종 학습 완료 기준
-
-- 45개 강의를 순서대로 실행하며 강의별 `README.md` 체크리스트를 완료한다.
-- 각 강의에서 최소 1개 실행 로그(또는 스크린샷)와 1개 회고 노트를 남긴다.
-- AWS/OpenStack 리소스 흐름을 Ansible 자동화 관점으로 설명할 수 있다.
-
----
-
-## 12. 추가 확장 학습 트랙 (45강 반영)
-
-기본 45강 이후 실무형으로 확장하기 위한 선택 심화 트랙입니다.  
-이번 개편에서는 아래 8개 트랙을 `curriculum/advanced_tracks.yml`로 정의했고, 모든 `lecture.yml`에 `advanced_integration` 필드를 추가해 각 강의와 연결했습니다.  
-`12-1`, `12-2`, `12-8`의 Docker/k8s 계열 항목은 필수 코어가 아니라 선택 심화로 운영합니다.
-
-### 12-1. Docker Compose 추가
-
-#### 학습 목적
-- 여러 컨테이너를 하나의 스택으로 실행
-- backend/frontend/postgres/redis 통합 환경 구성
-- ECS/Kubernetes 멀티서비스 배포 개념으로 확장
-
-#### 학습 내용
-- `docker compose` 구조
-- `services`, `ports`, `volumes`, `environment`, `depends_on`
-- 멀티컨테이너 애플리케이션 구성
-- `.env` 기반 설정 분리
-
-#### 실습 예시
-- frontend + backend + postgres + redis 구성
-- `docker-compose.yml` 작성, 일괄 기동/중지
-- 서비스 간 네트워크/의존성 확인
-
-#### 개발자 관점
-- 백엔드: API + DB + Redis 통합 실행 구조 이해
-- 프론트엔드: 정적 웹 + API + 인증/세션 백엔드 연결 구조 이해
-
-#### AWS 연결 포인트
-- Compose는 ECS Task 정의 또는 Kubernetes 다중 리소스 분리 전 단계
-- Compose 네트워크는 서비스 내부 통신 모델 학습에 유효
-- Compose 볼륨은 영속 저장소 개념 학습에 유효
-
-#### 45강 연계
-- `lecture02`, `lecture09`, `lecture12`, `lecture13`, `lecture14`, `lecture28`, `lecture32`
-
----
-
-### 12-2. Helm Chart 추가
-
-#### 학습 목적
-- Kubernetes 리소스를 패키지처럼 배포
-- 환경별 설정(dev/stage/prod)을 values 파일로 분리
-
-#### 학습 내용
-- Helm 개념
-- Chart 구조
-- `templates/`, `values.yaml`, `Chart.yaml`
-- 반복 YAML 템플릿화 및 환경별 값 분리
-
-#### 실습 예시
-- backend/frontend Helm Chart 작성
-- `values-dev.yaml`, `values-prod.yaml` 분리
-- replica/image tag/environment 변경 실습
-
-#### 개발자 관점
-- 백엔드: DB 연결정보, replica, tag 버전 관리
-- 프론트엔드: API endpoint, ingress host, static 설정 관리
-
-#### AWS 연결 포인트
-- Helm은 EKS 실무 운영에서 핵심 배포 도구
-- GitOps/Argo CD/배포 표준화와 자연스럽게 연결 가능
-
-#### 45강 연계
-- `lecture06`, `lecture36`, `lecture37`
-
----
-
-### 12-3. GitHub Actions 기반 CI 추가
-
-#### 학습 목적
-- 코드 변경 후 테스트/이미지 빌드/배포 준비 자동화
-- Git 기반 협업 + 배포 자동화 흐름 이해
-
-#### 학습 내용
-- GitHub Actions 구조(workflow/job/step)
-- 테스트 자동화
-- Docker image build 자동화
-- artifact/registry push 개념
-
-#### 실습 예시
-- backend push 시 테스트 실행
-- Docker image build + tag 자동화
-- 추후 ECR push 확장 가능한 workflow 설계
-
-#### 개발자 관점
-- 백엔드: merge 시 자동 테스트/빌드 파이프라인 이해
-- 프론트엔드: 빌드 결과물 생성/배포 자동화 이해
-
-#### AWS 연결 포인트
-- GitHub Actions -> ECR -> ECS/EKS 배포로 확장
-- CodeBuild/CodePipeline/Argo CD와 비교 가능
-
-#### 45강 연계
-- `lecture01`, `lecture08`, `lecture19`, `lecture22`, `lecture24`
-
----
-
-### 12-4. Nginx reverse proxy 심화
-
-#### 학습 목적
-- reverse proxy 역할 이해
-- frontend/backend/API 라우팅 구조를 실무 관점으로 학습
-
-#### 학습 내용
-- upstream 설정
-- location 기반 라우팅
-- 정적 파일/캐시/gzip/header 설정
-- CORS/TLS 종료 기초
-
-#### 실습 예시
-- `/` -> frontend, `/api` -> backend
-- 정적 리소스 캐싱
-- 보안 헤더/에러 페이지 추가
-
-#### 개발자 관점
-- 백엔드: API 서버를 직접 노출하지 않는 운영 이유 이해
-- 프론트엔드: SPA 라우팅/정적 캐싱/API 프록시 구조 이해
-
-#### AWS 연결 포인트
-- ALB + Nginx + Ingress Controller 구조 이해 기반
-- Ingress/CloudFront/API Gateway 개념으로 확장
-
-#### 45강 연계
-- `lecture05`, `lecture10`, `lecture11`, `lecture15`, `lecture30`
-
----
-
-### 12-5. PostgreSQL / Redis 추가
-
-#### 학습 목적
-- 상태 저장 계층 포함 서비스 아키텍처 이해
-- DB/캐시가 컨테이너/쿠버네티스에서 연결되는 방식 체감
-
-#### 학습 내용
-- PostgreSQL 역할
-- Redis 역할
-- 영속/휘발 데이터 차이
-- DB connection string, 세션/캐시/큐 기초
-
-#### 실습 예시
-- backend PostgreSQL 연동
-- Redis 캐시 또는 rate limit 예제
-- volume 영속화, 재시작 후 데이터 유지 확인
-
-#### 개발자 관점
-- 백엔드: ORM/SQL, 캐시 계층, 세션 저장 구조 이해
-- 프론트엔드: 응답속도와 캐시 효과 차이 체감
-
-#### AWS 연결 포인트
-- PostgreSQL = RDS/Aurora 이해 기반
-- Redis = ElastiCache 이해 기반
-- Local volume = 영속 데이터 저장 개념 학습 기반
-
-#### 45강 연계
-- `lecture04`, `lecture23`, `lecture29`, `lecture31`
-
----
-
-### 12-6. 모니터링(Prometheus/Grafana) 추가
-
-#### 학습 목적
-- 상태 관찰/문제 탐지 중심의 운영 관점 강화
-- 메트릭/대시보드/알림 필요성 이해
-
-#### 학습 내용
-- Observability 기초
-- Prometheus scrape 구조
-- Grafana dashboard 기초
-- CPU/Memory/Request/Error Rate 관찰
-
-#### 실습 예시
-- k3s에 Prometheus/Grafana 배포
-- backend 메트릭 노출
-- 응답시간/에러율/노드 리소스 시각화
-
-#### 개발자 관점
-- 백엔드: API 응답속도/에러율/리소스 사용률 분석
-- 프론트엔드: 성능 저하 시 백엔드 상태 진단 흐름 이해
-
-#### AWS 연결 포인트
-- CloudWatch, Managed Prometheus, Managed Grafana로 연결 가능
-- 운영 가시화/장애대응/알람 설계로 확장 가능
-
-#### 45강 연계
-- `lecture03`, `lecture07`, `lecture16`, `lecture17`, `lecture18`, `lecture25`, `lecture38`
-
----
-
-### 12-7. OpenStack 입문 체험 (MicroStack/DevStack/Kolla Ansible)
-
-#### 학습 목적
-- 입문자 기준으로 가장 가볍게 OpenStack 실체를 확인하는 순서를 익힌다.
-- Horizon에서 보이는 리소스 화면과 백엔드 서비스(Nova/Neutron/Cinder)를 연결한다.
-- VM 방식과 Docker+Ansible 방식의 차이를 이해하고 목적에 맞게 선택한다.
-
-#### 입문자 추천 결론
-- 가장 쉬움: **MicroStack**
-- 학습/개발용 표준: **DevStack**
-- Docker 관점 비교 학습: **Kolla Ansible**
-
-#### 먼저 무엇이 보이는가 (Horizon 기준)
-- Projects
-- Instances
-- Images
-- Networks
-- Routers
-- Floating IPs
-- Volumes
-
-위 화면을 먼저 본 다음, 백엔드 서비스를 연결해서 이해하면 빠릅니다.
-
-- Nova: VM 생성
-- Neutron: 네트워크/라우터/Floating IP
-- Cinder: 볼륨 생성
-- Horizon: 위 리소스를 보는 대시보드
-
-#### 방법 A - 가장 쉬운 체험: MicroStack
-
-무엇이 보이냐
-- 설치와 초기화
-- 이미지 등록
-- 네트워크 확인
-- VM 생성
-- Horizon 접속
-
-언제 적합하냐
-- OpenStack의 실체를 빠르게 눈으로 확인하고 싶을 때
-- Docker/k3s 이전 단계에서 IaaS 감각을 먼저 잡고 싶을 때
-- 멀티노드 없이 콘솔과 VM 생성 흐름만 먼저 보고 싶을 때
-
-한계
-- 프로덕션 운영 구조 학습에는 제한이 있다.
-- 목적은 운영 완성보다 입문 체험에 가깝다.
-
-#### 방법 B - 학습용 표준: DevStack
-
-무엇이 보이냐
-- OpenStack 서비스 설치/구성 과정
-- 네트워크 구성
-- Horizon
-- CLI 기반 리소스 생성
-- VM/네트워크/Floating IP
-
-언제 적합하냐
-- OpenStack 내부 구조를 더 깊게 이해하고 싶을 때
-- CLI와 설정 파일까지 포함해 학습하고 싶을 때
-
-한계
-- MicroStack보다 설치/복구가 복잡하다.
-- 대신 실패 복구 경험 자체가 학습 포인트가 된다.
-
-#### 방법 C - Docker 느낌: Kolla Ansible
-
-핵심 포인트
-- OpenStack 앱 하나를 Docker로 띄우는 것이 아니라, OpenStack 구성 서비스들을 컨테이너로 배포한다.
-
-무엇이 보이냐
-- `keystone`, `nova-api`, `neutron-server`, `glance-api`, `horizon`
-- `mariadb`, `rabbitmq`, `memcached`
-
-언제 적합하냐
-- Docker/Ansible 경험이 있고, 서비스 묶음 구조를 컨테이너 관점으로 보고 싶을 때
-
-한계
-- 입문 최소 체험에는 다소 무겁다.
-- 빠른 체험보다 배포 구조 학습에 가깝다.
-
-#### 가장 쉬운 추천 시나리오
-1. VirtualBox + Ubuntu 1대
-2. MicroStack 설치
-3. Horizon 로그인
-4. 이미지/네트워크/인스턴스/Floating IP 확인
-5. 필요 시 DevStack, Kolla Ansible 순으로 확장
-
-#### 공식 문서 기준 참고 링크
-- MicroStack single-node quickstart: <https://canonical.com/microstack/docs/single-node>
-- MicroStack 개요 문서: <https://canonical.com/microstack/docs>
-- DevStack latest docs: <https://docs.openstack.org/devstack/latest/>
-- OpenStack Install Guide (launch instance): <https://docs.openstack.org/install-guide/launch-instance.html>
-- Horizon latest docs: <https://docs.openstack.org/horizon/latest/>
-- Kolla Ansible quickstart: <https://docs.openstack.org/kolla-ansible/latest/user/quickstart.html>
-
-#### 45강 연계
-- `lecture20`, `lecture27`, `lecture39`, `lecture40`, `lecture41`, `lecture43`, `lecture44`, `lecture45`
-
----
-
-### 12-8. k3s 대신 kubeadm 또는 managed EKS 확장 비교
-
-#### 학습 목적
-- k3s/kubeadm/EKS 차이 이해
-- 실습 환경과 운영 환경의 책임 경계 비교
-
-#### 학습 내용
-- k3s 장점/한계
-- kubeadm 구조
-- EKS 운영 모델
-- control plane 관리 주체/난이도/비용 비교
-
-#### 비교 포인트
-
-| 구분 | k3s | kubeadm | Amazon EKS |
-|---|---|---|---|
-| 목적 | 경량 실습/엣지/소규모 | 표준 쿠버네티스 직접 구축 | 관리형 쿠버네티스 |
-| 설치 난이도 | 낮음 | 높음 | 중간 |
-| 운영 부담 | 낮음 | 높음 | control plane 부담 낮음 |
-| 학습 적합성 | 매우 좋음 | 깊이 있는 학습에 좋음 | AWS 실무 연결에 좋음 |
-| 관리 주체 | 사용자 | 사용자 | AWS + 사용자 |
-| 비용 | 로컬 자원 중심 | 로컬/추가 인프라 필요 | AWS 비용 발생 |
-
-#### 실습 예시
-- 동일 앱 k3s 배포
-- kubeadm 설치 흐름 비교
-- EKS 전환 시 AWS 관리 영역/사용자 관리 영역 정리
-
-#### 개발자 관점
-- 백엔드: 내가 관리할 운영 범위 경계 이해
-- 프론트엔드: 배포 대상 변화와 운영 책임 변화 이해
-
-#### AWS 연결 포인트
-- k3s: 쿠버네티스 개념 학습용
-- kubeadm: 내부 구조 심화용
-- EKS: AWS 실무 운영 연결용
-
-#### 45강 연계
-- `lecture21`, `lecture33`, `lecture34`, `lecture35`, `lecture42`
-
----
-
-## 13. 심화 확장 추천 순서
-
-기본 과정을 끝낸 뒤 권장 확장 순서는 아래와 같습니다.
-
-1. Docker Compose
-2. PostgreSQL / Redis
-3. Nginx reverse proxy 심화
-4. GitHub Actions 기반 CI
-5. Helm Chart
-6. Prometheus / Grafana
-7. OpenStack 체험: MicroStack -> DevStack -> Kolla Ansible
-8. kubeadm / EKS 비교
-
-위 순서는 개발자가 빠르게 실무 감각을 얻는 흐름 기준이며, `curriculum/advanced_tracks.yml`의 `recommended_order`에도 반영되어 있습니다.
-
----
-
-## 14. 최종 확장 목표
-
-기본 45강 + 심화 확장을 완료하면 다음 수준까지 도달할 수 있습니다.
-
-- 단일 서버를 넘어 멀티서비스 아키텍처를 설계/설명할 수 있다.
-- 로컬 컨테이너 환경과 쿠버네티스 환경의 차이를 설명할 수 있다.
-- 네트워크/프록시/DB/캐시/모니터링/자동화를 포함한 전체 서비스 구조를 이해한다.
-- AWS EC2, RDS, ElastiCache, ALB, ECR, ECS, EKS, CloudWatch 역할을 연결해 설명할 수 있다.
-
-즉, 이 과정은 단순 실습이 아니라 **개발자가 AWS를 기술적으로 이해하고 실무형 인프라 감각을 갖추기 위한 프로젝트형 브릿지 과정**을 목표로 합니다.

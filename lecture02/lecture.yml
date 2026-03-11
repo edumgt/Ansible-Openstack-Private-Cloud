@@ -1,0 +1,50 @@
+lecture:
+  id: lecture02
+  order: 2
+  title: 'Inventory/Variables 구조 설계'
+  module: ansible_foundation
+  level: beginner
+  duration_minutes: 60
+  tags:
+  - ansible
+  - inventory
+  - vars
+prerequisites:
+- lecture01 완료
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- inventory 파일 구조와 그룹/호스트 변수 우선순위를 이해한다.
+- 환경(dev/stage/prod) 분리를 위한 변수 설계 기준을 익힌다.
+- 강의별 실행 인벤토리 선택 기준을 정리한다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/00_bootstrap.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/00_bootstrap.yml

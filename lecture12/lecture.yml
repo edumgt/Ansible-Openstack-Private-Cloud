@@ -1,0 +1,50 @@
+lecture:
+  id: lecture12
+  order: 12
+  title: 'AWS VPC/EC2 기본 자동화 브릿지'
+  module: cloud_bridge
+  level: intermediate
+  duration_minutes: 60
+  tags:
+  - ansible
+  - aws
+  - vpc
+prerequisites:
+- lecture11 완료
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- VPC/EC2 리소스 자동화 흐름을 개념적으로 이해한다.
+- IaaS 리소스 모델을 OpenStack과 매핑한다.
+- 실습 전후 자원 정리 중요성을 학습한다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/20_aws_create_vpc.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/20_aws_create_vpc.yml

@@ -29,4 +29,4 @@ aws sts get-caller-identity
 
 ## 4) Docker 대상 호스트 준비
 - Docker를 설치할 대상이 로컬이면 `localhost`
-- 원격이면 `inventories/docker/hosts.ini`에 IP/계정을 추가
+- 원격이면 `ansible/inventories/docker/hosts.ini`에 IP/계정을 추가

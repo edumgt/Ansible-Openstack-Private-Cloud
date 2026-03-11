@@ -18,4 +18,4 @@
 6. `docs/03_docker_with_ansible.md` (선택)
 7. `docs/09_docker_management.md` (선택)
 8. `docs/10_ci_cd.md` (선택)
-9. OpenStack 실습은 `curriculum/lecture26/README.md`부터 `curriculum/lecture45/README.md` 순서로 진행
+9. OpenStack 실습은 `lecture13/README.md`부터 `lecture20/README.md` 순서로 진행

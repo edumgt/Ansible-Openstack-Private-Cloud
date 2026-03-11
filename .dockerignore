@@ -1,0 +1,13 @@
+.git
+.github
+.venv
+.ansible
+archive
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+results
+tmp

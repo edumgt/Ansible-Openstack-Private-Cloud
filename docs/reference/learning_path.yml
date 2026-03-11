@@ -1,0 +1,166 @@
+course:
+  name: Ansible-OpenStack Compact Lab (20 Lectures)
+  language: ko-KR
+  total_lectures: 20
+  default_inventory: ../../ansible/inventories/local/hosts.ini
+  policy:
+    - 모든 강의는 메인 폴더의 lecture01~lecture20 경로를 사용한다.
+    - 강의 실행은 install_enabled=false/true 두 모드로 검증한다.
+    - 실습 로그와 회고 노트를 강의별로 남긴다.
+modules:
+  - range: lecture01-lecture06
+    name: Ansible Foundation
+    outcome: 인벤토리/변수/템플릿/Role/검증 자동화 기초 확보
+  - range: lecture07-lecture10
+    name: Ansible Operations
+    outcome: 서비스 운영 자동화(Nginx/Docker/Compose) 실습
+  - range: lecture11-lecture12
+    name: Cloud Bridge
+    outcome: AWS 운영 모델과 OpenStack 전환 관점 연결
+  - range: lecture13-lecture17
+    name: OpenStack Foundation
+    outcome: Keystone/Glance/Nova/Neutron/Cinder 핵심 흐름 이해
+  - range: lecture18-lecture20
+    name: OpenStack Operations
+    outcome: Horizon/Kolla Ansible/Runbook 기반 운영 절차 완성
+lectures:
+  - id: lecture01
+    title: 'Ansible 학습환경 점검과 실행 루틴 정립'
+    module: ansible_foundation
+    folder: ../../lecture01
+    lecture_file: ../../lecture01/lecture.yml
+    playbook_file: ../../lecture01/playbook.yml
+    reference_playbook: ../../ansible/playbooks/00_ping.yml
+  - id: lecture02
+    title: 'Inventory/Variables 구조 설계'
+    module: ansible_foundation
+    folder: ../../lecture02
+    lecture_file: ../../lecture02/lecture.yml
+    playbook_file: ../../lecture02/playbook.yml
+    reference_playbook: ../../ansible/playbooks/00_bootstrap.yml
+  - id: lecture03
+    title: 'Ad-hoc 명령과 Facts 수집 자동화'
+    module: ansible_foundation
+    folder: ../../lecture03
+    lecture_file: ../../lecture03/lecture.yml
+    playbook_file: ../../lecture03/playbook.yml
+    reference_playbook: ../../ansible/playbooks/learning/01_ping.yml
+  - id: lecture04
+    title: 'Jinja2 템플릿과 Handler 실전'
+    module: ansible_foundation
+    folder: ../../lecture04
+    lecture_file: ../../lecture04/lecture.yml
+    playbook_file: ../../lecture04/playbook.yml
+    reference_playbook: ../../ansible/playbooks/learning/04_template_handler.yml
+  - id: lecture05
+    title: 'Role 분리와 재사용 설계'
+    module: ansible_foundation
+    folder: ../../lecture05
+    lecture_file: ../../lecture05/lecture.yml
+    playbook_file: ../../lecture05/playbook.yml
+    reference_playbook: ../../ansible/playbooks/03_role_web.yml
+  - id: lecture06
+    title: 'Idempotency와 검증 자동화'
+    module: ansible_foundation
+    folder: ../../lecture06
+    lecture_file: ../../lecture06/lecture.yml
+    playbook_file: ../../lecture06/playbook.yml
+    reference_playbook: ../../ansible/playbooks/check_nginx.yml
+  - id: lecture07
+    title: '사용자/권한/SSH 정책 자동화'
+    module: ansible_operations
+    folder: ../../lecture07
+    lecture_file: ../../lecture07/lecture.yml
+    playbook_file: ../../lecture07/playbook.yml
+    reference_playbook: ../../ansible/playbooks/01_users.yml
+  - id: lecture08
+    title: 'Nginx 서비스 배포와 검증'
+    module: ansible_operations
+    folder: ../../lecture08
+    lecture_file: ../../lecture08/lecture.yml
+    playbook_file: ../../lecture08/playbook.yml
+    reference_playbook: ../../ansible/playbooks/02_nginx.yml
+  - id: lecture09
+    title: 'Docker Engine 설치 자동화'
+    module: ansible_operations
+    folder: ../../lecture09
+    lecture_file: ../../lecture09/lecture.yml
+    playbook_file: ../../lecture09/playbook.yml
+    reference_playbook: ../../ansible/playbooks/10_docker_engine_install.yml
+  - id: lecture10
+    title: 'Compose 배포와 업데이트 전략'
+    module: ansible_operations
+    folder: ../../lecture10
+    lecture_file: ../../lecture10/lecture.yml
+    playbook_file: ../../lecture10/playbook.yml
+    reference_playbook: ../../ansible/playbooks/11_deploy_stack.yml
+  - id: lecture11
+    title: 'AWS SSM 연결 기반 운영 브릿지'
+    module: cloud_bridge
+    folder: ../../lecture11
+    lecture_file: ../../lecture11/lecture.yml
+    playbook_file: ../../lecture11/playbook.yml
+    reference_playbook: ../../ansible/playbooks/20_aws_provision_ssm_no_ssh.yml
+  - id: lecture12
+    title: 'AWS VPC/EC2 기본 자동화 브릿지'
+    module: cloud_bridge
+    folder: ../../lecture12
+    lecture_file: ../../lecture12/lecture.yml
+    playbook_file: ../../lecture12/playbook.yml
+    reference_playbook: ../../ansible/playbooks/20_aws_create_vpc.yml
+  - id: lecture13
+    title: 'OpenStack 아키텍처와 핵심 서비스 이해'
+    module: openstack_foundation
+    folder: ../../lecture13
+    lecture_file: ../../lecture13/lecture.yml
+    playbook_file: ../../lecture13/playbook.yml
+    reference_playbook: ../../ansible/playbooks/00_ping.yml
+  - id: lecture14
+    title: 'Keystone 인증/프로젝트/역할 모델'
+    module: openstack_foundation
+    folder: ../../lecture14
+    lecture_file: ../../lecture14/lecture.yml
+    playbook_file: ../../lecture14/playbook.yml
+    reference_playbook: ../../ansible/playbooks/00_bootstrap.yml
+  - id: lecture15
+    title: 'Glance 이미지 관리 자동화'
+    module: openstack_foundation
+    folder: ../../lecture15
+    lecture_file: ../../lecture15/lecture.yml
+    playbook_file: ../../lecture15/playbook.yml
+    reference_playbook: ../../ansible/playbooks/11_deploy_stack.yml
+  - id: lecture16
+    title: 'Nova 인스턴스 라이프사이클 자동화'
+    module: openstack_foundation
+    folder: ../../lecture16
+    lecture_file: ../../lecture16/lecture.yml
+    playbook_file: ../../lecture16/playbook.yml
+    reference_playbook: ../../ansible/playbooks/12_deploy_stack_rolling.yml
+  - id: lecture17
+    title: 'Neutron/Cinder 리소스 자동화'
+    module: openstack_foundation
+    folder: ../../lecture17
+    lecture_file: ../../lecture17/lecture.yml
+    playbook_file: ../../lecture17/playbook.yml
+    reference_playbook: ../../ansible/playbooks/check_nginx.yml
+  - id: lecture18
+    title: 'Horizon 운영 점검과 로그 수집'
+    module: openstack_operations
+    folder: ../../lecture18
+    lecture_file: ../../lecture18/lecture.yml
+    playbook_file: ../../lecture18/playbook.yml
+    reference_playbook: ../../ansible/playbooks/aws_outputs.yml
+  - id: lecture19
+    title: 'Kolla Ansible 배포 준비와 검증'
+    module: openstack_operations
+    folder: ../../lecture19
+    lecture_file: ../../lecture19/lecture.yml
+    playbook_file: ../../lecture19/playbook.yml
+    reference_playbook: ../../ansible/playbooks/10_docker_engine_install.yml
+  - id: lecture20
+    title: '종합 캡스톤: OpenStack 운영 Runbook 완성'
+    module: openstack_operations
+    folder: ../../lecture20
+    lecture_file: ../../lecture20/lecture.yml
+    playbook_file: ../../lecture20/playbook.yml
+    reference_playbook: ../../ansible/playbooks/00_ping.yml

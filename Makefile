@@ -7,7 +7,7 @@ lint:
 	ansible-lint
 
 inventory-aws:
-	ansible-inventory -i inventories/aws/aws_ec2.yml --graph
+	ansible-inventory -i ansible/inventories/aws/aws_ec2.yml --graph
 
 molecule:
 	molecule test

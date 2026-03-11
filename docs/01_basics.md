@@ -10,16 +10,16 @@
 
 ## Ad-hoc 명령(한 줄 실행)
 ```bash
-ansible -i inventories/local/hosts.ini local -m ping
-ansible -i inventories/local/hosts.ini local -m command -a "uname -a"
+ansible -i ansible/inventories/local/hosts.ini local -m ping
+ansible -i ansible/inventories/local/hosts.ini local -m command -a "uname -a"
 ```
 
 ## Playbook 실행
 ```bash
-ansible-playbook playbooks/00_ping.yml
+ansible-playbook ansible/playbooks/00_ping.yml
 ```
 
 ## Dry-run(미리보기)
 ```bash
-ansible-playbook playbooks/02_nginx.yml --check --diff
+ansible-playbook ansible/playbooks/02_nginx.yml --check --diff
 ```

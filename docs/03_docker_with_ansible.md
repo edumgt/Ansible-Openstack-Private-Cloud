@@ -7,6 +7,6 @@
 
 ## 실행
 ```bash
-ansible-playbook -i inventories/dev/hosts.ini playbooks/10_docker_engine_install.yml
-ansible-playbook -i inventories/dev/hosts.ini playbooks/11_deploy_stack.yml
+ansible-playbook -i ansible/inventories/dev/hosts.ini ansible/playbooks/10_docker_engine_install.yml
+ansible-playbook -i ansible/inventories/dev/hosts.ini ansible/playbooks/11_deploy_stack.yml
 ```

@@ -1,0 +1,50 @@
+lecture:
+  id: lecture11
+  order: 11
+  title: 'AWS SSM 연결 기반 운영 브릿지'
+  module: cloud_bridge
+  level: intermediate
+  duration_minutes: 60
+  tags:
+  - ansible
+  - aws
+  - ssm
+prerequisites:
+- lecture10 완료
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- SSH 없이 SSM 기반 관리 흐름을 이해한다.
+- 클라우드 운영 접근 제어 관점을 학습한다.
+- OpenStack 인증/접근 모델과 비교 포인트를 정리한다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/20_aws_provision_ssm_no_ssh.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/20_aws_provision_ssm_no_ssh.yml

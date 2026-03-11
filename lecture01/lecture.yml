@@ -1,0 +1,49 @@
+lecture:
+  id: lecture01
+  order: 1
+  title: 'Ansible 학습환경 점검과 실행 루틴 정립'
+  module: ansible_foundation
+  level: beginner
+  duration_minutes: 60
+  tags:
+  - ansible
+  - setup
+prerequisites:
+- 선수 강의 없음
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- 컨트롤 노드/관리 노드 구조를 이해하고 로컬 실습 환경을 점검한다.
+- Ansible 기본 실행 흐름(ping, playbook 실행, 결과 확인)을 익힌다.
+- 실행 로그를 표준 포맷으로 남기는 루틴을 만든다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/00_ping.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/00_ping.yml

@@ -10,11 +10,11 @@
 
 ```bash
 # ping
-ansible -i inventories/dev/hosts.ini all -m ping
+ansible -i ansible/inventories/dev/hosts.ini all -m ping
 
 # 특정 그룹에서 명령 실행
-ansible -i inventories/dev/hosts.ini app_hosts -a "uname -a"
+ansible -i ansible/inventories/dev/hosts.ini app_hosts -a "uname -a"
 
 # 플레이북 실행
-ansible-playbook -i inventories/dev/hosts.ini playbooks/00_ping.yml
+ansible-playbook -i ansible/inventories/dev/hosts.ini ansible/playbooks/00_ping.yml
 ```

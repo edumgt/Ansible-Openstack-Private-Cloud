@@ -1,0 +1,40 @@
+---
+- name: "Neutron/Cinder 리소스 자동화"
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    lecture_id: "lecture17"
+    lecture_title: "Neutron/Cinder 리소스 자동화"
+    install_enabled: false
+    reference_playbook: "../ansible/playbooks/check_nginx.yml"
+    lecture_packages:
+      - python3
+      - python3-pip
+      - git
+      - curl
+      - jq
+  tasks:
+    - name: Show lecture context
+      ansible.builtin.debug:
+        msg:
+          - "id={{ lecture_id }}"
+          - "title={{ lecture_title }}"
+          - "reference_playbook={{ reference_playbook }}"
+          - "install_enabled={{ install_enabled }}"
+
+    - name: Install lecture packages when enabled
+      ansible.builtin.package:
+        name: "{{ lecture_packages }}"
+        state: present
+      when: install_enabled | bool
+
+    - name: Check Python3 availability
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Python3 version
+      ansible.builtin.debug:
+        var: python_version.stdout

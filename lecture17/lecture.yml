@@ -1,0 +1,50 @@
+lecture:
+  id: lecture17
+  order: 17
+  title: 'Neutron/Cinder 리소스 자동화'
+  module: openstack_foundation
+  level: intermediate
+  duration_minutes: 60
+  tags:
+  - openstack
+  - neutron
+  - cinder
+prerequisites:
+- lecture16 완료
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- Neutron 네트워크/서브넷/라우터/FIP 개념을 정리한다.
+- Cinder 볼륨 생성/연결/분리 흐름을 이해한다.
+- 네트워크/스토리지 운영 기준 체크리스트를 만든다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: 목표/검증 기준 확인
+  - 핵심 실습 40분: playbook 실행 및 결과 검증
+  - 회고 10분: 로그 정리와 다음 강의 연결
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - docker
+  - openstack
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 패키지 설치 태스크를 수행
+  - install_enabled=false일 때는 검증 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/check_nginx.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/check_nginx.yml
