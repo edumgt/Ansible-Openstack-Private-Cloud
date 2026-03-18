@@ -1,0 +1,41 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  network:
+    network:
+      version: 2
+      ethernets:
+        enp0s3:
+          dhcp4: true
+  identity:
+    hostname: ansible-openstack-lab
+    username: ansible
+    # Password: ansible  (generated with: openssl passwd -6 ansible)
+    password: "$6$S9t3EOTGA5Bv5Z6E$vigU80RLUVdbfYKLqM7UcvRIl4aUiACIIfbrhLeQJBLAUj2iK4LOzXZUQv0YNgBTithASxwmJNQbSz4kaWCLd0"
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - python3
+    - python3-pip
+    - python3-venv
+    - git
+    - curl
+    - wget
+    - ca-certificates
+    - gnupg
+    - lsb-release
+    - apt-transport-https
+    - software-properties-common
+    - vim
+    - net-tools
+    - openssh-server
+  storage:
+    layout:
+      name: lvm
+  late-commands:
+    - echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/ansible
+    - chmod 440 /target/etc/sudoers.d/ansible
