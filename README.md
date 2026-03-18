@@ -172,3 +172,43 @@ IMAGE=docker.io/<dockerhub-user>/<repo>:latest \
 CONTAINER_NAME=python-ansible-playbook \
 ./scripts/sync_local_docker.sh
 ```
+
+## 11. VM 이미지 (OVA) 빌드 및 폐쇄망 배포
+
+이 저장소의 모든 Ansible + OpenStack 실습 환경을 **VirtualBox OVA 이미지**로 패키징할 수 있습니다.
+
+### 11.1 사전 요구 사항
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads) >= 6.1
+- [Packer](https://developer.hashicorp.com/packer/install) >= 1.10
+
+### 11.2 OVA 빌드
+```bash
+# Packer 플러그인 초기화 (최초 1회)
+packer init packer/
+
+# OVA 빌드 (약 30~60분 소요)
+./scripts/build_ova.sh
+```
+
+빌드 결과물:
+```
+packer/output-ansible-openstack-lab/ansible-openstack-lab.ova
+```
+
+### 11.3 VirtualBox에 임포트 및 실행
+```bash
+VBoxManage import packer/output-ansible-openstack-lab/ansible-openstack-lab.ova \
+    --vsys 0 --vmname "ansible-openstack-lab"
+VBoxManage startvm "ansible-openstack-lab" --type headless
+
+# SSH 접속 (호스트 포트 2222 → VM 포트 22)
+ssh -p 2222 ansible@127.0.0.1   # 비밀번호: ansible
+```
+
+자세한 테스트 절차: [`docs/vm_image/virtualbox-test.md`](docs/vm_image/virtualbox-test.md)
+
+### 11.4 폐쇄망(Air-Gapped) 환경 배포
+OVA 이미지에는 pip 패키지 wheel, Ansible Galaxy 컬렉션이 미리 번들되어 있습니다.
+폐쇄망 환경에서의 APT 미러, DNS, NTP, Docker 레지스트리, OpenStack 엔드포인트 설정 방법:
+
+→ [`docs/vm_image/airgap-config.md`](docs/vm_image/airgap-config.md)
