@@ -38,3 +38,14 @@
     - name: Print Python3 version
       ansible.builtin.debug:
         var: python_version.stdout
+
+    - name: Show gathered server resource facts
+      ansible.builtin.debug:
+        msg:
+          - "hostname={{ ansible_facts.hostname }}"
+          - "os={{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+          - "kernel={{ ansible_facts.kernel }}"
+          - "cpu_vcpus={{ ansible_facts.processor_vcpus | default('unknown') }}"
+          - "memory_mb={{ ansible_facts.memtotal_mb | default('unknown') }}"
+          - "root_mount_size_mb={{ ((ansible_facts.mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_total') | first | default(0)) / 1024 / 1024) | int }}"
+          - "root_mount_free_mb={{ ((ansible_facts.mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | default(0)) / 1024 / 1024) | int }}"

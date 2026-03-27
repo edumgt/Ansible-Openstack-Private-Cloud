@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  backend:
+    image: python:3.11-slim
+    container_name: lecture02-fastapi
+    restart: unless-stopped
+    working_dir: /app
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --no-cache-dir fastapi uvicorn &&
+        cat > /app/main.py <<'PY'
+        from fastapi import FastAPI
+
+        app = FastAPI(title="lecture02-backend")
+
+
+        @app.get("/")
+        def read_root():
+            return {"message": "FastAPI backend is running"}
+
+
+        @app.get("/health")
+        def health():
+            return {"status": "ok"}
+        PY
+        uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"

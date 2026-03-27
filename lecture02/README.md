@@ -31,6 +31,9 @@ ansible-playbook -i ansible/inventories/local/hosts.ini lecture02/playbook.yml -
 # 설치 포함 실행
 ansible-playbook -i ansible/inventories/local/hosts.ini lecture02/playbook.yml -e install_enabled=true
 
+# FastAPI 백엔드 컨테이너 실행
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture02/playbook.yml -e deploy_backend=true
+
 # 레퍼런스 플레이북 실행
 ansible-playbook -i ansible/inventories/local/hosts.ini ansible/playbooks/00_bootstrap.yml
 ```
@@ -49,3 +52,16 @@ ansible-playbook -i ansible/inventories/local/hosts.ini ansible/playbooks/00_boo
 ## 8. 참고 파일
 - `./lecture.yml`
 - `./playbook.yml`
+
+
+---
+```
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture02/playbook.yml -e deploy_backend=true
+```
+
+### playbook 수정
+
+---
+```
+ansible-playbook lecture02/md.yaml
+```

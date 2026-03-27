@@ -7,7 +7,10 @@
     lecture_id: "lecture02"
     lecture_title: "Inventory/Variables 구조 설계"
     install_enabled: false
+    deploy_backend: false
     reference_playbook: "../ansible/playbooks/00_bootstrap.yml"
+    backend_compose_src: "{{ playbook_dir }}/backend.yaml"
+    backend_compose_dest: "/tmp/lecture02-backend.yaml"
     lecture_packages:
       - python3
       - python3-pip
@@ -22,6 +25,7 @@
           - "title={{ lecture_title }}"
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
+          - "deploy_backend={{ deploy_backend }}"
 
     - name: Install lecture packages when enabled
       ansible.builtin.package:
@@ -38,3 +42,22 @@
     - name: Print Python3 version
       ansible.builtin.debug:
         var: python_version.stdout
+
+    - name: Copy backend compose file
+      ansible.builtin.copy:
+        src: "{{ backend_compose_src }}"
+        dest: "{{ backend_compose_dest }}"
+        mode: "0644"
+      when: deploy_backend | bool
+
+    - name: Start FastAPI backend container
+      ansible.builtin.command:
+        cmd: docker compose -f {{ backend_compose_dest }} up -d
+      when: deploy_backend | bool
+
+    - name: Show backend access hint
+      ansible.builtin.debug:
+        msg:
+          - "FastAPI backend should be available on port 8000"
+          - "Check with: curl http://<host>:8000/health"
+      when: deploy_backend | bool
