@@ -14,9 +14,17 @@
     mock_state_dir: "{{ workspace_root }}/.lab/openstack-mock"
     mock_server_pid_path: "{{ mock_state_dir }}/server.pid"
     mock_server_log_path: "{{ mock_state_dir }}/server.log"
+    mock_keystone_port: ""
+    mock_keystone_port_candidates:
+      - 15000
+      - 15001
+      - 15002
+      - 15003
+      - 15004
+    mock_nova_port: 18774
     keystone_admin_openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
     keystone_admin_auth:
-      OS_AUTH_URL: "http://127.0.0.1:5000/v3"
+      OS_AUTH_URL: "http://127.0.0.1:{{ mock_keystone_port }}/v3"
       OS_USERNAME: "admin"
       OS_PASSWORD: "123456"
       OS_PROJECT_NAME: "admin"
@@ -35,12 +43,34 @@
           - "install_enabled={{ install_enabled }}"
           - "workspace_root={{ workspace_root }}"
           - "openrc={{ keystone_admin_openrc_path }}"
+          - "mock_keystone_port={{ mock_keystone_port | default('auto', true) }}"
+          - "mock_nova_port={{ mock_nova_port }}"
 
     - name: Ensure lab state directory exists
       ansible.builtin.file:
         path: "{{ mock_state_dir }}"
         state: directory
         mode: "0755"
+
+    - name: Find available mock Keystone port
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ item }}"
+        state: stopped
+        timeout: 1
+      loop: "{{ mock_keystone_port_candidates }}"
+      register: mock_keystone_port_checks
+      ignore_errors: true
+
+    - name: Select available mock Keystone port
+      ansible.builtin.set_fact:
+        mock_keystone_port: "{{ (mock_keystone_port_checks.results | selectattr('failed', 'equalto', false) | map(attribute='item') | list | first) | default(15000, true) }}"
+
+    - name: Print selected mock port
+      ansible.builtin.debug:
+        msg:
+          - "selected_mock_keystone_port={{ mock_keystone_port }}"
+          - "selected_mock_auth_url=http://127.0.0.1:{{ mock_keystone_port }}/v3"
 
     - name: Install Codespaces practice packages when enabled
       ansible.builtin.pip:
@@ -81,18 +111,20 @@
         argv:
           - "{{ workspace_root }}/scripts/start_mock_openstack.sh"
           - "{{ workspace_root }}"
+          - "{{ mock_keystone_port | string }}"
+          - "{{ mock_nova_port | string }}"
       register: mock_server_start
       changed_when: "'started' in (mock_server_start.stdout | default('', true))"
 
     - name: Wait for mock Keystone endpoint
       ansible.builtin.wait_for:
         host: "127.0.0.1"
-        port: 5000
+        port: "{{ mock_keystone_port }}"
         timeout: 10
 
     - name: Check mock health endpoint
       ansible.builtin.uri:
-        url: "http://127.0.0.1:5000/healthz"
+        url: "http://127.0.0.1:{{ mock_keystone_port }}/healthz"
         return_content: true
       register: mock_health
 

@@ -11,9 +11,11 @@
     workspace_root: "{{ playbook_dir }}/.."
     codespaces_venv_path: "{{ workspace_root }}/.venv"
     requirements_file: "{{ workspace_root }}/requirements-codespaces.txt"
+    openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
+    mock_keystone_port: 15000
     use_mock_openstack_auth: true
     openstack_mock_auth:
-      OS_AUTH_URL: "http://127.0.0.1:5000/v3"
+      OS_AUTH_URL: "http://127.0.0.1:{{ mock_keystone_port }}/v3"
       OS_USERNAME: "admin"
       OS_PASSWORD: "123456"
       OS_PROJECT_NAME: "admin"
@@ -22,18 +24,72 @@
       OS_REGION_NAME: "RegionOne"
       OS_INTERFACE: "public"
       OS_IDENTITY_API_VERSION: "3"
-    openstack_cli_env:
-      OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
-      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') | default((openstack_mock_auth.OS_AUTH_URL if use_mock_openstack_auth else ''), true) }}"
-      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') | default((openstack_mock_auth.OS_USERNAME if use_mock_openstack_auth else ''), true) }}"
-      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') | default((openstack_mock_auth.OS_PASSWORD if use_mock_openstack_auth else ''), true) }}"
-      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') | default((openstack_mock_auth.OS_PROJECT_NAME if use_mock_openstack_auth else ''), true) }}"
-      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') | default((openstack_mock_auth.OS_USER_DOMAIN_NAME if use_mock_openstack_auth else ''), true) }}"
-      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') | default((openstack_mock_auth.OS_PROJECT_DOMAIN_NAME if use_mock_openstack_auth else ''), true) }}"
-      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') | default((openstack_mock_auth.OS_REGION_NAME if use_mock_openstack_auth else ''), true) }}"
-      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') | default((openstack_mock_auth.OS_INTERFACE if use_mock_openstack_auth else ''), true) }}"
-      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') | default((openstack_mock_auth.OS_IDENTITY_API_VERSION if use_mock_openstack_auth else ''), true) }}"
   tasks:
+    - name: Check lecture22 openrc presence
+      ansible.builtin.stat:
+        path: "{{ openrc_path }}"
+      register: openrc_file
+
+    - name: Load lecture22 openrc values
+      ansible.builtin.slurp:
+        path: "{{ openrc_path }}"
+      register: openrc_content
+      when: openrc_file.stat.exists
+
+    - name: Prepare openrc export text
+      ansible.builtin.set_fact:
+        openrc_exports_text: "{{ (openrc_content.content | b64decode) if openrc_file.stat.exists else '' }}"
+
+    - name: Build OpenStack CLI environment
+      ansible.builtin.set_fact:
+        openstack_cli_env:
+          OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+          OS_AUTH_URL: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_AUTH_URL=(.*)$') | first)
+              | default((openstack_mock_auth.OS_AUTH_URL if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USERNAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USERNAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USERNAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PASSWORD: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PASSWORD=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PASSWORD if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USER_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USER_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USER_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_REGION_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_REGION_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_REGION_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_INTERFACE: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_INTERFACE=(.*)$') | first)
+              | default((openstack_mock_auth.OS_INTERFACE if use_mock_openstack_auth else ''), true)
+            }}
+          OS_IDENTITY_API_VERSION: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_IDENTITY_API_VERSION=(.*)$') | first)
+              | default((openstack_mock_auth.OS_IDENTITY_API_VERSION if use_mock_openstack_auth else ''), true)
+            }}
+
     - name: Show lecture context
       ansible.builtin.debug:
         msg:
@@ -42,7 +98,16 @@
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
           - "use_mock_openstack_auth={{ use_mock_openstack_auth }}"
+          - "openrc_path={{ openrc_path }}"
+          - "openrc_exists={{ openrc_file.stat.exists }}"
           - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
+
+    - name: Warn when legacy Keystone port is still in use
+      ansible.builtin.debug:
+        msg:
+          - "legacy_os_auth_url_detected={{ openstack_cli_env.OS_AUTH_URL }}"
+          - "expected mock auth url from lecture22 openrc"
+      when: "'127.0.0.1:5000' in (openstack_cli_env.OS_AUTH_URL | default('', true))"
 
     - name: Install Codespaces practice packages when enabled
       ansible.builtin.pip:
