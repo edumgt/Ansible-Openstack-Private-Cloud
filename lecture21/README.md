@@ -15,6 +15,7 @@
 - Python/Ansible 버전 확인
 - 인벤토리 파일 확인: `ansible/inventories/local/hosts.ini`
 - 필요 시 `OS_CLOUD` 또는 `OS_AUTH_URL` 등 OpenStack 인증 환경변수 확인
+- Keystone이 없으면 기본 더미 인증값(`http://127.0.0.1:5000/v3`, `admin/123456`)으로 테스트 가능
 
 ## 4. 실습 절차
 1. 기본 실행으로 CLI 설치 여부와 인증 상태를 확인한다.
@@ -29,17 +30,22 @@ ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -
 
 # CLI 설치 포함 실행
 ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -e install_enabled=true
+
+# 더미 인증값 비활성화
+ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -e install_enabled=false -e use_dummy_openstack_auth=false
 ```
 
 ## 6. 결과 확인 기준
 - `PLAY RECAP` 기준 `failed=0`
 - `openstack --version` 출력 또는 미설치 상태 확인
 - `token_rc`, `nova_service_rc`, `hypervisor_rc` 값 확인
+- Keystone이 없으면 `auth-url missing` 대신 연결 실패 메시지로 전환되는지 확인
 - 인증이 정상인 경우 Nova 서비스/하이퍼바이저 목록 확인
 
 ## 7. 트러블슈팅 힌트
 - `openstack` 명령 없음: `install_enabled=true`로 재실행
 - 인증 실패: `OS_CLOUD` 또는 `OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`, `OS_PROJECT_NAME` 확인
+- Keystone 미구성 상태 테스트: 기본 더미 인증값으로도 `connection refused`가 나올 수 있으며 이는 정상적인 사전 점검 결과
 - Nova 조회 실패: Keystone 인증 성공 여부와 compute API 엔드포인트 상태 확인
 
 ## 8. 참고 파일

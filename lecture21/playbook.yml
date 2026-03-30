@@ -7,6 +7,7 @@
     lecture_id: "lecture21"
     lecture_title: "OpenStack/Nova 기본 점검"
     install_enabled: false
+    use_dummy_openstack_auth: true
     reference_playbook: "../ansible/playbooks/00_ping.yml"
     lecture_packages:
       - python3
@@ -15,17 +16,27 @@
       - curl
       - jq
       - python3-openstackclient
+    openstack_dummy_auth:
+      OS_AUTH_URL: "http://127.0.0.1:5000/v3"
+      OS_USERNAME: "admin"
+      OS_PASSWORD: "123456"
+      OS_PROJECT_NAME: "admin"
+      OS_USER_DOMAIN_NAME: "Default"
+      OS_PROJECT_DOMAIN_NAME: "Default"
+      OS_REGION_NAME: "RegionOne"
+      OS_INTERFACE: "public"
+      OS_IDENTITY_API_VERSION: "3"
     openstack_cli_env:
-      OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') }}"
-      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') }}"
-      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') }}"
-      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') }}"
-      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') }}"
-      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') }}"
-      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') }}"
-      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') }}"
-      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') }}"
-      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') }}"
+      OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') | default((openstack_dummy_auth.OS_AUTH_URL if use_dummy_openstack_auth else ''), true) }}"
+      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') | default((openstack_dummy_auth.OS_USERNAME if use_dummy_openstack_auth else ''), true) }}"
+      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') | default((openstack_dummy_auth.OS_PASSWORD if use_dummy_openstack_auth else ''), true) }}"
+      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') | default((openstack_dummy_auth.OS_PROJECT_NAME if use_dummy_openstack_auth else ''), true) }}"
+      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') | default((openstack_dummy_auth.OS_USER_DOMAIN_NAME if use_dummy_openstack_auth else ''), true) }}"
+      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') | default((openstack_dummy_auth.OS_PROJECT_DOMAIN_NAME if use_dummy_openstack_auth else ''), true) }}"
+      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') | default((openstack_dummy_auth.OS_REGION_NAME if use_dummy_openstack_auth else ''), true) }}"
+      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') | default((openstack_dummy_auth.OS_INTERFACE if use_dummy_openstack_auth else ''), true) }}"
+      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') | default((openstack_dummy_auth.OS_IDENTITY_API_VERSION if use_dummy_openstack_auth else ''), true) }}"
   tasks:
     - name: Show lecture context
       ansible.builtin.debug:
@@ -34,8 +45,10 @@
           - "title={{ lecture_title }}"
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
+          - "use_dummy_openstack_auth={{ use_dummy_openstack_auth }}"
           - "os_cloud={{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
-          - "os_auth_url_set={{ (lookup('ansible.builtin.env', 'OS_AUTH_URL') | default('', true) | length) > 0 }}"
+          - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
+          - "os_auth_url_set={{ (openstack_cli_env.OS_AUTH_URL | default('', true) | length) > 0 }}"
 
     - name: Install lecture packages when enabled
       ansible.builtin.package:

@@ -1,0 +1,56 @@
+lecture:
+  id: lecture22
+  order: 22
+  title: 'Keystone 설치와 인증 환경 준비'
+  module: openstack_operations
+  level: intermediate
+  duration_minutes: 45
+  tags:
+  - openstack
+  - keystone
+  - authentication
+  - cli
+prerequisites:
+- lecture21 이해
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- Keystone 관련 패키지와 CLI 설치 여부를 점검한다.
+- 기본 인증 환경변수 파일을 생성한다.
+- lecture21 실행 전 Keystone 준비 상태를 검증한다.
+curriculum:
+  session_flow:
+  - 오프닝 10분: Keystone 역할과 목표 확인
+  - 핵심 실습 25분: playbook 실행 및 결과 확인
+  - 회고 10분: lecture21 연계 점검
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - openstack
+  - keystone
+  - apache2
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 Keystone 관련 패키지를 설치
+  - 항상 openrc 파일을 생성해 다음 강의와 연결
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+  - python3-openstackclient
+  - keystone
+  - apache2
+  - libapache2-mod-wsgi-py3
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/00_ping.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
+  - source /root/keystone-admin-openrc && ansible-playbook -i ../ansible/inventories/local/hosts.ini ../lecture21/playbook.yml -e install_enabled=false

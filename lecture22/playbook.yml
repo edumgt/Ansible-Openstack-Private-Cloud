@@ -1,0 +1,114 @@
+---
+- name: "Keystone 설치와 인증 환경 준비"
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    lecture_id: "lecture22"
+    lecture_title: "Keystone 설치와 인증 환경 준비"
+    install_enabled: false
+    reference_playbook: "../ansible/playbooks/00_ping.yml"
+    keystone_admin_openrc_path: "/root/keystone-admin-openrc"
+    keystone_admin_auth:
+      OS_AUTH_URL: "http://127.0.0.1:5000/v3"
+      OS_USERNAME: "admin"
+      OS_PASSWORD: "123456"
+      OS_PROJECT_NAME: "admin"
+      OS_USER_DOMAIN_NAME: "Default"
+      OS_PROJECT_DOMAIN_NAME: "Default"
+      OS_REGION_NAME: "RegionOne"
+      OS_INTERFACE: "public"
+      OS_IDENTITY_API_VERSION: "3"
+    lecture_packages:
+      - python3
+      - python3-pip
+      - git
+      - curl
+      - jq
+      - python3-openstackclient
+      - keystone
+      - apache2
+      - libapache2-mod-wsgi-py3
+  tasks:
+    - name: Show lecture context
+      ansible.builtin.debug:
+        msg:
+          - "id={{ lecture_id }}"
+          - "title={{ lecture_title }}"
+          - "reference_playbook={{ reference_playbook }}"
+          - "install_enabled={{ install_enabled }}"
+          - "keystone_admin_openrc_path={{ keystone_admin_openrc_path }}"
+
+    - name: Install lecture packages when enabled
+      ansible.builtin.package:
+        name: "{{ lecture_packages }}"
+        state: present
+      when: install_enabled | bool
+
+    - name: Check Python3 availability
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Python3 version
+      ansible.builtin.debug:
+        var: python_version.stdout
+
+    - name: Check Keystone CLI availability
+      ansible.builtin.command: keystone-manage --version
+      register: keystone_manage_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Keystone CLI summary
+      ansible.builtin.debug:
+        msg:
+          - "keystone_manage_rc={{ keystone_manage_version.rc }}"
+          - "keystone_manage={{ keystone_manage_version.stdout | default(keystone_manage_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Check Apache2 service state
+      ansible.builtin.command: systemctl is-active apache2
+      register: apache2_status
+      changed_when: false
+      failed_when: false
+
+    - name: Print Apache2 service state
+      ansible.builtin.debug:
+        msg:
+          - "apache2_rc={{ apache2_status.rc }}"
+          - "apache2_state={{ apache2_status.stdout | default(apache2_status.stderr, true) | default('unknown', true) }}"
+
+    - name: Check Keystone port 5000 listener
+      ansible.builtin.command: ss -lntp
+      register: ss_output
+      changed_when: false
+      failed_when: false
+
+    - name: Print Keystone port 5000 summary
+      ansible.builtin.debug:
+        msg:
+          - "keystone_port_5000_present={{ ':5000' in (ss_output.stdout | default('', true)) }}"
+
+    - name: Write Keystone admin openrc template
+      ansible.builtin.copy:
+        dest: "{{ keystone_admin_openrc_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          export OS_AUTH_URL={{ keystone_admin_auth.OS_AUTH_URL }}
+          export OS_USERNAME={{ keystone_admin_auth.OS_USERNAME }}
+          export OS_PASSWORD={{ keystone_admin_auth.OS_PASSWORD }}
+          export OS_PROJECT_NAME={{ keystone_admin_auth.OS_PROJECT_NAME }}
+          export OS_USER_DOMAIN_NAME={{ keystone_admin_auth.OS_USER_DOMAIN_NAME }}
+          export OS_PROJECT_DOMAIN_NAME={{ keystone_admin_auth.OS_PROJECT_DOMAIN_NAME }}
+          export OS_REGION_NAME={{ keystone_admin_auth.OS_REGION_NAME }}
+          export OS_INTERFACE={{ keystone_admin_auth.OS_INTERFACE }}
+          export OS_IDENTITY_API_VERSION={{ keystone_admin_auth.OS_IDENTITY_API_VERSION }}
+
+    - name: Print next step guide
+      ansible.builtin.debug:
+        msg:
+          - "source {{ keystone_admin_openrc_path }}"
+          - "then run: ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -e install_enabled=false"
