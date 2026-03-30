@@ -1,0 +1,53 @@
+lecture:
+  id: lecture21
+  order: 21
+  title: 'OpenStack/Nova 기본 점검'
+  module: openstack_operations
+  level: intermediate
+  duration_minutes: 30
+  tags:
+  - openstack
+  - nova
+  - cli
+  - validation
+prerequisites:
+- lecture19 완료
+- OpenStack 인증 정보 또는 clouds.yaml 준비
+- Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+learning_objectives:
+- OpenStack CLI의 기본 연결 상태를 점검한다.
+- Nova 서비스 목록과 하이퍼바이저 상태를 빠르게 확인한다.
+- 인증 실패와 서비스 장애 출력을 구분해 읽는다.
+curriculum:
+  session_flow:
+  - 오프닝 5분: 인증 정보와 목표 확인
+  - 핵심 실습 20분: playbook 실행 및 결과 검토
+  - 회고 5분: 실패 원인과 다음 점검 항목 정리
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - yaml
+  optional:
+  - openstack
+  - nova
+  - python-openstackclient
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 OpenStack CLI 패키지를 설치
+  - install_enabled=false일 때는 점검 태스크만 수행
+  packages:
+  - python3
+  - python3-pip
+  - git
+  - curl
+  - jq
+  - python3-openstackclient
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/00_ping.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true

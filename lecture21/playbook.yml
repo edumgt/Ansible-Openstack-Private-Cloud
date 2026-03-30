@@ -1,0 +1,140 @@
+---
+- name: "OpenStack/Nova 기본 점검"
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    lecture_id: "lecture21"
+    lecture_title: "OpenStack/Nova 기본 점검"
+    install_enabled: false
+    reference_playbook: "../ansible/playbooks/00_ping.yml"
+    lecture_packages:
+      - python3
+      - python3-pip
+      - git
+      - curl
+      - jq
+      - python3-openstackclient
+    openstack_cli_env:
+      OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') }}"
+      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') }}"
+      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') }}"
+      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') }}"
+      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') }}"
+      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') }}"
+      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') }}"
+      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') }}"
+      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') }}"
+      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') }}"
+  tasks:
+    - name: Show lecture context
+      ansible.builtin.debug:
+        msg:
+          - "id={{ lecture_id }}"
+          - "title={{ lecture_title }}"
+          - "reference_playbook={{ reference_playbook }}"
+          - "install_enabled={{ install_enabled }}"
+          - "os_cloud={{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+          - "os_auth_url_set={{ (lookup('ansible.builtin.env', 'OS_AUTH_URL') | default('', true) | length) > 0 }}"
+
+    - name: Install lecture packages when enabled
+      ansible.builtin.package:
+        name: "{{ lecture_packages }}"
+        state: present
+      when: install_enabled | bool
+
+    - name: Check Python3 availability
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Python3 version
+      ansible.builtin.debug:
+        var: python_version.stdout
+
+    - name: Check OpenStack CLI availability
+      ansible.builtin.command: openstack --version
+      register: openstack_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack CLI version
+      ansible.builtin.debug:
+        msg:
+          - "openstack_rc={{ openstack_version.rc }}"
+          - "openstack={{ openstack_version.stdout | default(openstack_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Check OpenStack token issue
+      ansible.builtin.command:
+        argv:
+          - openstack
+          - token
+          - issue
+          - -f
+          - value
+          - -c
+          - expires
+      register: openstack_token_issue
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Print OpenStack token summary
+      ansible.builtin.debug:
+        msg:
+          - "token_rc={{ openstack_token_issue.rc }}"
+          - "token_result={{ openstack_token_issue.stdout | default(openstack_token_issue.stderr, true) | default('auth-not-configured', true) }}"
+
+    - name: Check Nova compute services
+      ansible.builtin.command:
+        argv:
+          - openstack
+          - compute
+          - service
+          - list
+          - -f
+          - value
+          - -c
+          - Binary
+          - -c
+          - Host
+          - -c
+          - State
+          - -c
+          - Status
+      register: nova_compute_services
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Print Nova compute services
+      ansible.builtin.debug:
+        msg:
+          - "nova_service_rc={{ nova_compute_services.rc }}"
+          - "nova_services={{ nova_compute_services.stdout_lines | default([nova_compute_services.stderr | default('nova-service-check-failed', true)], true) }}"
+
+    - name: Check Nova hypervisors
+      ansible.builtin.command:
+        argv:
+          - openstack
+          - hypervisor
+          - list
+          - -f
+          - value
+          - -c
+          - Hypervisor Hostname
+          - -c
+          - State
+          - -c
+          - Status
+      register: nova_hypervisors
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Print Nova hypervisors
+      ansible.builtin.debug:
+        msg:
+          - "hypervisor_rc={{ nova_hypervisors.rc }}"
+          - "hypervisors={{ nova_hypervisors.stdout_lines | default([nova_hypervisors.stderr | default('hypervisor-check-failed', true)], true) }}"
