@@ -225,3 +225,60 @@
         msg:
           - "hypervisor_rc={{ nova_hypervisors.rc }}"
           - "hypervisors={{ nova_hypervisors.stdout_lines | default([nova_hypervisors.stderr | default('hypervisor-check-failed', true)], true) }}"
+
+    - name: Query Nova servers detail (compute1/compute2)
+      ansible.builtin.uri:
+        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v2.1/servers/detail') }}"
+        return_content: true
+      register: nova_servers_detail
+      changed_when: false
+      failed_when: false
+
+    - name: Query Neutron networks
+      ansible.builtin.uri:
+        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v2.0/networks') }}"
+        return_content: true
+      register: neutron_networks
+      changed_when: false
+      failed_when: false
+
+    - name: Query Cinder volumes detail
+      ansible.builtin.uri:
+        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v3/project-admin/volumes/detail') }}"
+        return_content: true
+      register: cinder_volumes
+      changed_when: false
+      failed_when: false
+
+    - name: Build lecture21 infra summary
+      ansible.builtin.set_fact:
+        lecture21_servers: "{{ nova_servers_detail.json.servers | default([], true) }}"
+        lecture21_networks: "{{ neutron_networks.json.networks | default([], true) }}"
+        lecture21_volumes: "{{ cinder_volumes.json.volumes | default([], true) }}"
+
+    - name: Print compute/network/storage summary
+      ansible.builtin.debug:
+        msg:
+          - "servers={{ lecture21_servers | map(attribute='name') | list }}"
+          - "networks={{ lecture21_networks | map(attribute='name') | list }}"
+          - "volumes={{ lecture21_volumes | map(attribute='name') | list }}"
+          - "compute1_network={{ (lecture21_servers | selectattr('name', 'equalto', 'compute1') | map(attribute='addresses') | list | first).keys() | list | first | default('n/a', true) }}"
+          - "compute2_network={{ (lecture21_servers | selectattr('name', 'equalto', 'compute2') | map(attribute='addresses') | list | first).keys() | list | first | default('n/a', true) }}"
+
+    - name: Validate 2 computes and split network/storage design
+      ansible.builtin.assert:
+        that:
+          - lecture21_servers | length >= 2
+          - "'compute1' in (lecture21_servers | map(attribute='name') | list)"
+          - "'compute2' in (lecture21_servers | map(attribute='name') | list)"
+          - "'net-compute1' in (lecture21_networks | map(attribute='name') | list)"
+          - "'net-compute2' in (lecture21_networks | map(attribute='name') | list)"
+          - "'vol-compute1' in (lecture21_volumes | map(attribute='name') | list)"
+          - "'vol-compute2' in (lecture21_volumes | map(attribute='name') | list)"
+        fail_msg: "compute 2대, neutron 분리 네트워크, cinder 볼륨 연결 검증에 실패했습니다."
+        success_msg: "compute1/compute2 + neutron 분리 네트워크 + cinder 볼륨 연결 구성이 확인되었습니다."
+
+    - name: Print Horizon dashboard URL
+      ansible.builtin.debug:
+        msg:
+          - "horizon_dashboard=http://127.0.0.1:{{ mock_keystone_port }}/dashboard"
