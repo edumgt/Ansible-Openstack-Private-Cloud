@@ -1,25 +1,27 @@
 lecture:
   id: lecture19
   order: 19
-  title: 'Kolla Ansible 배포 준비와 검증'
+  title: '실제 OpenStack 클라이언트 환경 준비'
   module: openstack_operations
   level: intermediate
   duration_minutes: 60
   tags:
   - openstack
-  - kolla-ansible
-  - openstack-helm
-  - deployment
+  - openstack-client
+  - devstack
+  - openrc
+  - clouds-yaml
 prerequisites:
 - lecture18 완료
 - Linux 기본 명령어(ls, cat, systemctl) 사용 가능
+- 실제 OpenStack API 또는 DevStack 설치 대상 Ubuntu 서버 준비
 learning_objectives:
-- Kolla Ansible 배포 전 사전 점검 항목을 정리한다.
-- 컨테이너 기반 OpenStack 제어평면 구성 개념을 이해한다.
-- 배포 후 검증 항목(keystone/nova/neutron/horizon)을 정의한다.
-- OpenStack-Helm 사전 점검 항목(쿠버네티스/Helm CLI)을 비교 관점으로 정리한다.
+- 실제 OpenStack API에 연결할 클라이언트 환경을 준비한다.
+- openrc와 clouds.yaml을 생성한다.
+- 별도 Ubuntu 서버에 DevStack을 올릴 수 있도록 사전 준비를 수행한다.
+- OpenStack CLI로 토큰 발급 테스트를 수행한다.
 external_reference:
-- 'https://genonai.notion.site/OpenStack-Helm-31bfea8aef3c8173a9a1e7dc35a13c73'
+- 'https://docs.openstack.org/python-openstackclient/latest/'
 curriculum:
   session_flow:
   - 오프닝 10분: 목표/검증 기준 확인
@@ -56,5 +58,4 @@ ansible_lab:
   run_examples:
   - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false
   - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=true
-  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false -e helm_preflight_enabled=true
-  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ../ansible/playbooks/10_docker_engine_install.yml
+  - ansible-playbook -i ../ansible/inventories/dev/hosts.ini ../ansible/playbooks/30_devstack_host_prep.yml -l openstack_hosts

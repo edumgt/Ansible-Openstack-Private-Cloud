@@ -1,0 +1,355 @@
+---
+- name: "Octavia Load Balancer 점검"
+  hosts: all
+  become: false
+  gather_facts: true
+  vars:
+    lecture_id: "lecture24"
+    lecture_title: "Octavia Load Balancer 점검"
+    install_enabled: false
+    reference_playbook: "../ansible/playbooks/00_ping.yml"
+    workspace_root: "{{ playbook_dir }}/.."
+    codespaces_venv_path: "{{ workspace_root }}/.venv"
+    openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
+    mock_keystone_port: 15000
+    octavia_service_available: true
+    lb_create_enabled: false
+    lb_name: "lecture24-test-lb"
+    lb_vip_subnet: "private-subnet"
+    lb_listener_name: "lecture24-listener-http"
+    lb_listener_port: 80
+    lb_pool_name: "lecture24-pool"
+    lb_pool_algorithm: "ROUND_ROBIN"
+    lb_healthmonitor_name: "lecture24-healthmon"
+    lb_member_weight: 1
+    use_mock_openstack_auth: true
+    openstack_mock_auth:
+      OS_AUTH_URL: "http://127.0.0.1:{{ mock_keystone_port }}/v3"
+      OS_USERNAME: "admin"
+      OS_PASSWORD: "123456"
+      OS_PROJECT_NAME: "admin"
+      OS_USER_DOMAIN_NAME: "Default"
+      OS_PROJECT_DOMAIN_NAME: "Default"
+      OS_REGION_NAME: "RegionOne"
+      OS_INTERFACE: "public"
+      OS_IDENTITY_API_VERSION: "3"
+    lecture_packages:
+      - python3
+      - python3-pip
+  tasks:
+    - name: Check openrc presence
+      ansible.builtin.stat:
+        path: "{{ openrc_path }}"
+      register: openrc_file
+
+    - name: Load openrc values
+      ansible.builtin.slurp:
+        path: "{{ openrc_path }}"
+      register: openrc_content
+      when: openrc_file.stat.exists
+
+    - name: Prepare openrc export text
+      ansible.builtin.set_fact:
+        openrc_exports_text: "{{ (openrc_content.content | b64decode) if openrc_file.stat.exists else '' }}"
+
+    - name: Build OpenStack CLI environment
+      ansible.builtin.set_fact:
+        openstack_cli_env:
+          OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+          OS_AUTH_URL: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_AUTH_URL=(.*)$') | first)
+              | default((openstack_mock_auth.OS_AUTH_URL if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USERNAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USERNAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USERNAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PASSWORD: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PASSWORD=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PASSWORD if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USER_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USER_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USER_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_REGION_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_REGION_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_REGION_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_INTERFACE: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_INTERFACE=(.*)$') | first)
+              | default((openstack_mock_auth.OS_INTERFACE if use_mock_openstack_auth else ''), true)
+            }}
+          OS_IDENTITY_API_VERSION: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_IDENTITY_API_VERSION=(.*)$') | first)
+              | default((openstack_mock_auth.OS_IDENTITY_API_VERSION if use_mock_openstack_auth else ''), true)
+            }}
+
+    - name: Show lecture context
+      ansible.builtin.debug:
+        msg:
+          - "id={{ lecture_id }}"
+          - "title={{ lecture_title }}"
+          - "reference_playbook={{ reference_playbook }}"
+          - "install_enabled={{ install_enabled }}"
+          - "use_mock_openstack_auth={{ use_mock_openstack_auth }}"
+          - "openrc_path={{ openrc_path }}"
+          - "openrc_exists={{ openrc_file.stat.exists }}"
+          - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
+          - "octavia_service_available={{ octavia_service_available }}"
+          - "lb_create_enabled={{ lb_create_enabled }}"
+
+    - name: Install lecture packages when enabled
+      ansible.builtin.pip:
+        name: "{{ lecture_packages }}"
+        virtualenv: "{{ codespaces_venv_path }}"
+        virtualenv_command: "python3 -m venv"
+      when: install_enabled | bool
+
+    - name: Install Octavia client when enabled
+      ansible.builtin.pip:
+        name:
+          - python-octaviaclient
+        virtualenv: "{{ codespaces_venv_path }}"
+        virtualenv_command: "python3 -m venv"
+      when: install_enabled | bool
+
+    - name: Check Python3 availability
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Python3 version
+      ansible.builtin.debug:
+        var: python_version.stdout
+
+    - name: Check OpenStack CLI availability
+      ansible.builtin.command: "{{ codespaces_venv_path }}/bin/openstack --version"
+      register: openstack_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack CLI version
+      ansible.builtin.debug:
+        msg:
+          - "openstack_rc={{ openstack_version.rc }}"
+          - "openstack={{ openstack_version.stdout | default(openstack_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Check OpenStack service list
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - service
+          - list
+          - -f
+          - json
+      register: openstack_service_list
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Parse service list
+      ansible.builtin.set_fact:
+        services_available: "{{ (openstack_service_list.stdout | default('[]', true)) | from_json }}"
+
+    - name: Detect Octavia service
+      ansible.builtin.set_fact:
+        octavia_detected: >-
+          {{
+            (services_available | selectattr('Type', 'equalto', 'load-balancer') | list | length > 0)
+            or (services_available | selectattr('Name', 'equalto', 'octavia') | list | length > 0)
+          }}
+
+    - name: Update Octavia service availability
+      ansible.builtin.set_fact:
+        octavia_service_available: "{{ octavia_detected }}"
+      when: openstack_service_list.rc == 0
+
+    - name: Print Octavia service status
+      ansible.builtin.debug:
+        msg:
+          - "service_list_rc={{ openstack_service_list.rc }}"
+          - "octavia_detected={{ octavia_detected }}"
+          - "octavia_service_available={{ octavia_service_available }}"
+
+    - name: Print Octavia concept guide
+      ansible.builtin.debug:
+        msg:
+          - "=== Octavia Load Balancer 개념 ==="
+          - "1. Load Balancer: VIP를 제공하는 최상위 리소스"
+          - "2. Listener: 특정 포트에서 트래픽을 수신 (예: 80/HTTP)"
+          - "3. Pool: 백엔드 서버(Member)들의 그룹"
+          - "4. Member: 실제 서비스를 제공하는 서버 (compute 인스턴스)"
+          - "5. Health Monitor: Member 상태를 주기적으로 체크"
+          - "6. 사용 사례: compute1, compute2를 하나의 VIP로 통합"
+
+    - name: Check Octavia endpoint when service is available
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - endpoint
+          - list
+          - --service
+          - load-balancer
+          - -f
+          - yaml
+      register: octavia_endpoint_check
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: octavia_service_available | bool
+
+    - name: Print Octavia endpoint
+      ansible.builtin.debug:
+        msg:
+          - "endpoint_rc={{ octavia_endpoint_check.rc | default('n/a') }}"
+          - "endpoint_result={{ octavia_endpoint_check.stdout | default('no-octavia-service', true) }}"
+      when: octavia_service_available | bool
+
+    - name: List existing load balancers
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - loadbalancer
+          - list
+          - -f
+          - yaml
+      register: octavia_lb_list
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: octavia_service_available | bool
+
+    - name: Print existing load balancers
+      ansible.builtin.debug:
+        msg:
+          - "lb_list_rc={{ octavia_lb_list.rc | default('n/a') }}"
+          - "load_balancers={{ octavia_lb_list.stdout | default('no-lb-found', true) }}"
+      when: octavia_service_available | bool
+
+    - name: Query compute servers for LB members
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - server
+          - list
+          - -f
+          - json
+      register: compute_servers
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when:
+        - octavia_service_available | bool
+        - lb_create_enabled | bool
+
+    - name: Parse server list
+      ansible.builtin.set_fact:
+        available_servers: "{{ (compute_servers.stdout | default('[]', true)) | from_json }}"
+      when:
+        - octavia_service_available | bool
+        - lb_create_enabled | bool
+
+    - name: Print available servers for LB members
+      ansible.builtin.debug:
+        msg:
+          - "servers={{ available_servers | map(attribute='Name') | list }}"
+          - "compute1={{ available_servers | selectattr('Name', 'equalto', 'compute1') | list }}"
+          - "compute2={{ available_servers | selectattr('Name', 'equalto', 'compute2') | list }}"
+      when:
+        - octavia_service_available | bool
+        - lb_create_enabled | bool
+
+    - name: Print Load Balancer creation guide
+      ansible.builtin.debug:
+        msg:
+          - "=== Load Balancer 생성 절차 (수동) ==="
+          - "# 1. Load Balancer 생성"
+          - "openstack loadbalancer create --name {{ lb_name }} --vip-subnet-id {{ lb_vip_subnet }}"
+          - ""
+          - "# 2. Listener 추가"
+          - "openstack loadbalancer listener create --name {{ lb_listener_name }} --protocol HTTP --protocol-port {{ lb_listener_port }} {{ lb_name }}"
+          - ""
+          - "# 3. Pool 생성"
+          - "openstack loadbalancer pool create --name {{ lb_pool_name }} --lb-algorithm {{ lb_pool_algorithm }} --listener {{ lb_listener_name }} --protocol HTTP"
+          - ""
+          - "# 4. Health Monitor 추가"
+          - "openstack loadbalancer healthmonitor create --delay 5 --max-retries 3 --timeout 5 --type HTTP --url-path / {{ lb_pool_name }}"
+          - ""
+          - "# 5. Member 추가 (compute1)"
+          - "openstack loadbalancer member create --subnet-id private-subnet --address <compute1-ip> --protocol-port 80 {{ lb_pool_name }}"
+          - ""
+          - "# 6. Member 추가 (compute2)"
+          - "openstack loadbalancer member create --subnet-id private-subnet --address <compute2-ip> --protocol-port 80 {{ lb_pool_name }}"
+          - ""
+          - "# 7. VIP 확인"
+          - "openstack loadbalancer show {{ lb_name }} -f value -c vip_address"
+      when: octavia_service_available | bool
+
+    - name: Print Octavia unavailable notice
+      ansible.builtin.debug:
+        msg:
+          - "=== Octavia 서비스를 사용할 수 없습니다 ==="
+          - "현재 OpenStack 환경에 Octavia가 설치되어 있지 않습니다."
+          - "대체 방안:"
+          - "1. DevStack에서 Octavia 활성화: enable_plugin octavia https://opendev.org/openstack/octavia"
+          - "2. Standalone HAProxy 사용"
+          - "3. Nginx를 Reverse Proxy/Load Balancer로 사용"
+          - "4. 외부 LB 솔루션 (F5, Citrix ADC 등)"
+          - ""
+          - "Neutron LBaaS (구버전):"
+          - "- Neutron LBaaS는 deprecated되었습니다"
+          - "- Octavia가 공식 권장 LBaaS 솔루션입니다"
+      when: not (octavia_service_available | bool)
+
+    - name: Print Octavia architecture
+      ansible.builtin.debug:
+        msg:
+          - "=== Octavia 아키텍처 ==="
+          - "Amphora VM: Octavia가 관리하는 HAProxy 인스턴스"
+          - "  ├─ Load Balancer API가 자동으로 Amphora VM 생성"
+          - "  ├─ Amphora는 실제 트래픽 분산을 수행"
+          - "  └─ 사용자는 Amphora를 직접 관리하지 않음"
+          - ""
+          - "VIP (Virtual IP):"
+          - "  ├─ Load Balancer의 진입점 IP"
+          - "  ├─ Floating IP를 연결하여 외부 접근 가능"
+          - "  └─ 클라이언트는 VIP로만 접근"
+          - ""
+          - "트래픽 흐름:"
+          - "  Client → VIP → Amphora → Member (compute1 or compute2)"
+
+    - name: Print next step guide
+      ansible.builtin.debug:
+        msg:
+          - "=== Octavia vs. 기존 LB 비교 ==="
+          - "Octavia:"
+          - "  - OpenStack 네이티브 LBaaS"
+          - "  - API 기반 자동화"
+          - "  - Amphora VM 기반 (HAProxy)"
+          - "  - Auto-scaling 지원"
+          - "HAProxy/Nginx (Standalone):"
+          - "  - 수동 설정 필요"
+          - "  - OpenStack 외부 리소스"
+          - "  - 직접 고가용성 구성 필요"
+          - ""
+          - "lecture23, 24 완료!"
+          - "compute1/compute2를 LB로 묶어 단일 진입점으로 서비스하는 방법을 학습했습니다."

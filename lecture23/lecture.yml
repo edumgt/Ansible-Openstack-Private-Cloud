@@ -1,0 +1,53 @@
+lecture:
+  id: lecture23
+  order: 23
+  title: 'Swift Object Storage 점검'
+  module: openstack_operations
+  level: intermediate
+  duration_minutes: 40
+  tags:
+  - openstack
+  - swift
+  - object-storage
+  - cli
+prerequisites:
+- lecture21 완료
+- OpenStack 인증 정보 준비
+- Linux 기본 명령어 사용 가능
+learning_objectives:
+- Swift Object Storage 서비스 개념을 이해한다.
+- 공용 파일 저장소와 공유 디스크/폴더의 차이를 구분한다.
+- Container와 Object 구조를 이해한다.
+- Swift CLI로 파일 업로드/다운로드를 수행한다.
+external_reference:
+- 'https://docs.openstack.org/swift/latest/'
+curriculum:
+  session_flow:
+  - 오프닝 5분: Swift 개념과 사용 사례
+  - 핵심 실습 30분: Container/Object 생성 및 관리
+  - 회고 5분: 공유 스토리지 vs Object Storage 비교
+tech_stack:
+  required:
+  - ansible-core
+  - python3
+  - python-openstackclient
+  - yaml
+  optional:
+  - swift
+  - python-swiftclient
+installation_plan:
+  target_inventory: ../ansible/inventories/local/hosts.ini
+  target_host_group: all
+  approach:
+  - install_enabled=true일 때 Swift 클라이언트 패키지 설치
+  - Swift 서비스가 없을 때는 개념만 확인
+  packages:
+  - python3
+  - python-openstackclient
+  - python-swiftclient
+ansible_lab:
+  lecture_playbook: ./playbook.yml
+  reference_playbook: ../ansible/playbooks/00_ping.yml
+  run_examples:
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false -e openrc_path=../.lab/real-openstack-openrc -e use_mock_openstack_auth=false
+  - ansible-playbook -i ../ansible/inventories/local/hosts.ini ./playbook.yml -e install_enabled=false -e swift_service_available=false

@@ -1,0 +1,386 @@
+---
+- name: "Swift Object Storage 점검"
+  hosts: all
+  become: false
+  gather_facts: true
+  vars:
+    lecture_id: "lecture23"
+    lecture_title: "Swift Object Storage 점검"
+    install_enabled: false
+    reference_playbook: "../ansible/playbooks/00_ping.yml"
+    workspace_root: "{{ playbook_dir }}/.."
+    codespaces_venv_path: "{{ workspace_root }}/.venv"
+    openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
+    mock_keystone_port: 15000
+    swift_service_available: true
+    swift_test_container_name: "lecture23-test-container"
+    swift_test_object_name: "test-file.txt"
+    swift_test_content: |
+      This is a test file for Swift Object Storage.
+      Created by lecture23 playbook.
+      Timestamp: {{ ansible_date_time.iso8601 }}
+    use_mock_openstack_auth: true
+    openstack_mock_auth:
+      OS_AUTH_URL: "http://127.0.0.1:{{ mock_keystone_port }}/v3"
+      OS_USERNAME: "admin"
+      OS_PASSWORD: "123456"
+      OS_PROJECT_NAME: "admin"
+      OS_USER_DOMAIN_NAME: "Default"
+      OS_PROJECT_DOMAIN_NAME: "Default"
+      OS_REGION_NAME: "RegionOne"
+      OS_INTERFACE: "public"
+      OS_IDENTITY_API_VERSION: "3"
+    lecture_packages:
+      - python3
+      - python3-pip
+  tasks:
+    - name: Check openrc presence
+      ansible.builtin.stat:
+        path: "{{ openrc_path }}"
+      register: openrc_file
+
+    - name: Load openrc values
+      ansible.builtin.slurp:
+        path: "{{ openrc_path }}"
+      register: openrc_content
+      when: openrc_file.stat.exists
+
+    - name: Prepare openrc export text
+      ansible.builtin.set_fact:
+        openrc_exports_text: "{{ (openrc_content.content | b64decode) if openrc_file.stat.exists else '' }}"
+
+    - name: Build OpenStack CLI environment
+      ansible.builtin.set_fact:
+        openstack_cli_env:
+          OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+          OS_AUTH_URL: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_AUTH_URL=(.*)$') | first)
+              | default((openstack_mock_auth.OS_AUTH_URL if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USERNAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USERNAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USERNAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PASSWORD: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PASSWORD=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PASSWORD if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_USER_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_USER_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_USER_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_PROJECT_DOMAIN_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_PROJECT_DOMAIN_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_PROJECT_DOMAIN_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_REGION_NAME: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_REGION_NAME=(.*)$') | first)
+              | default((openstack_mock_auth.OS_REGION_NAME if use_mock_openstack_auth else ''), true)
+            }}
+          OS_INTERFACE: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_INTERFACE=(.*)$') | first)
+              | default((openstack_mock_auth.OS_INTERFACE if use_mock_openstack_auth else ''), true)
+            }}
+          OS_IDENTITY_API_VERSION: >-
+            {{
+              (openrc_exports_text | regex_findall('(?m)^export OS_IDENTITY_API_VERSION=(.*)$') | first)
+              | default((openstack_mock_auth.OS_IDENTITY_API_VERSION if use_mock_openstack_auth else ''), true)
+            }}
+
+    - name: Show lecture context
+      ansible.builtin.debug:
+        msg:
+          - "id={{ lecture_id }}"
+          - "title={{ lecture_title }}"
+          - "reference_playbook={{ reference_playbook }}"
+          - "install_enabled={{ install_enabled }}"
+          - "use_mock_openstack_auth={{ use_mock_openstack_auth }}"
+          - "openrc_path={{ openrc_path }}"
+          - "openrc_exists={{ openrc_file.stat.exists }}"
+          - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
+          - "swift_service_available={{ swift_service_available }}"
+
+    - name: Install lecture packages when enabled
+      ansible.builtin.pip:
+        name: "{{ lecture_packages }}"
+        virtualenv: "{{ codespaces_venv_path }}"
+        virtualenv_command: "python3 -m venv"
+      when: install_enabled | bool
+
+    - name: Install Swift client when enabled
+      ansible.builtin.pip:
+        name:
+          - python-swiftclient
+        virtualenv: "{{ codespaces_venv_path }}"
+        virtualenv_command: "python3 -m venv"
+      when: install_enabled | bool
+
+    - name: Check Python3 availability
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print Python3 version
+      ansible.builtin.debug:
+        var: python_version.stdout
+
+    - name: Check OpenStack CLI availability
+      ansible.builtin.command: "{{ codespaces_venv_path }}/bin/openstack --version"
+      register: openstack_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack CLI version
+      ansible.builtin.debug:
+        msg:
+          - "openstack_rc={{ openstack_version.rc }}"
+          - "openstack={{ openstack_version.stdout | default(openstack_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Check OpenStack service list
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - service
+          - list
+          - -f
+          - json
+      register: openstack_service_list
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Parse service list
+      ansible.builtin.set_fact:
+        services_available: "{{ (openstack_service_list.stdout | default('[]', true)) | from_json }}"
+
+    - name: Detect Swift service
+      ansible.builtin.set_fact:
+        swift_detected: >-
+          {{
+            (services_available | selectattr('Type', 'equalto', 'object-store') | list | length > 0)
+            or (services_available | selectattr('Name', 'equalto', 'swift') | list | length > 0)
+          }}
+
+    - name: Update Swift service availability
+      ansible.builtin.set_fact:
+        swift_service_available: "{{ swift_detected }}"
+      when: openstack_service_list.rc == 0
+
+    - name: Print Swift service status
+      ansible.builtin.debug:
+        msg:
+          - "service_list_rc={{ openstack_service_list.rc }}"
+          - "swift_detected={{ swift_detected }}"
+          - "swift_service_available={{ swift_service_available }}"
+
+    - name: Print Swift concept guide
+      ansible.builtin.debug:
+        msg:
+          - "=== Swift Object Storage 개념 ==="
+          - "1. Object Storage: HTTP REST API 기반 파일 저장소"
+          - "2. Container: Object를 담는 논리적 단위 (버킷과 유사)"
+          - "3. Object: 실제 파일 데이터 + 메타데이터"
+          - "4. 공유 디스크와의 차이: 파일시스템 마운트 없이 URL로 접근"
+          - "5. 사용 사례: 백업, 로그, 이미지, 미디어 파일 저장"
+
+    - name: Check Swift endpoint when service is available
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - endpoint
+          - list
+          - --service
+          - object-store
+          - -f
+          - yaml
+      register: swift_endpoint_check
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Print Swift endpoint
+      ansible.builtin.debug:
+        msg:
+          - "endpoint_rc={{ swift_endpoint_check.rc | default('n/a') }}"
+          - "endpoint_result={{ swift_endpoint_check.stdout | default('no-swift-service', true) }}"
+      when: swift_service_available | bool
+
+    - name: Create test file for upload
+      ansible.builtin.copy:
+        dest: "/tmp/{{ swift_test_object_name }}"
+        content: "{{ swift_test_content }}"
+        mode: "0644"
+      when: swift_service_available | bool
+
+    - name: Create Swift container
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - container
+          - create
+          - "{{ swift_test_container_name }}"
+      register: swift_container_create
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Upload object to Swift
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - object
+          - create
+          - "{{ swift_test_container_name }}"
+          - "/tmp/{{ swift_test_object_name }}"
+      register: swift_object_upload
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: List objects in container
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - object
+          - list
+          - "{{ swift_test_container_name }}"
+          - -f
+          - yaml
+      register: swift_object_list
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Show object metadata
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - object
+          - show
+          - "{{ swift_test_container_name }}"
+          - "{{ swift_test_object_name }}"
+          - -f
+          - yaml
+      register: swift_object_metadata
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Download object from Swift
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - object
+          - save
+          - "{{ swift_test_container_name }}"
+          - "{{ swift_test_object_name }}"
+          - --file
+          - "/tmp/downloaded-{{ swift_test_object_name }}"
+      register: swift_object_download
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Verify downloaded content
+      ansible.builtin.command:
+        argv:
+          - cat
+          - "/tmp/downloaded-{{ swift_test_object_name }}"
+      register: swift_download_content
+      changed_when: false
+      failed_when: false
+      when: swift_service_available | bool
+
+    - name: Print Swift operations summary
+      ansible.builtin.debug:
+        msg:
+          - "container_create_rc={{ swift_container_create.rc | default('n/a') }}"
+          - "object_upload_rc={{ swift_object_upload.rc | default('n/a') }}"
+          - "object_list_rc={{ swift_object_list.rc | default('n/a') }}"
+          - "object_download_rc={{ swift_object_download.rc | default('n/a') }}"
+          - "downloaded_content={{ swift_download_content.stdout | default('n/a', true) }}"
+      when: swift_service_available | bool
+
+    - name: Clean up test object
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - object
+          - delete
+          - "{{ swift_test_container_name }}"
+          - "{{ swift_test_object_name }}"
+      register: swift_object_delete
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Clean up test container
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - container
+          - delete
+          - "{{ swift_test_container_name }}"
+      register: swift_container_delete
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      when: swift_service_available | bool
+
+    - name: Clean up local files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/{{ swift_test_object_name }}"
+        - "/tmp/downloaded-{{ swift_test_object_name }}"
+      when: swift_service_available | bool
+
+    - name: Print Swift unavailable notice
+      ansible.builtin.debug:
+        msg:
+          - "=== Swift 서비스를 사용할 수 없습니다 ==="
+          - "현재 OpenStack 환경에 Swift가 설치되어 있지 않습니다."
+          - "대체 방안:"
+          - "1. DevStack에서 Swift 활성화: enable_service s-proxy s-object s-container s-account"
+          - "2. Standalone Swift 설치"
+          - "3. MinIO 또는 S3 호환 스토리지 사용"
+          - "4. Ceph RGW (RADOS Gateway) 사용"
+      when: not (swift_service_available | bool)
+
+    - name: Print next step guide
+      ansible.builtin.debug:
+        msg:
+          - "=== Swift vs. 공유 디스크/폴더 비교 ==="
+          - "Swift (Object Storage):"
+          - "  - HTTP REST API로 접근"
+          - "  - URL 기반 (http://swift-endpoint/container/object)"
+          - "  - 메타데이터 관리"
+          - "  - 무제한 확장 가능"
+          - "  - 버전 관리 지원"
+          - "공유 디스크/폴더 (NFS, CIFS):"
+          - "  - 파일 시스템 마운트 필요"
+          - "  - 경로 기반 (/mnt/share/file.txt)"
+          - "  - POSIX 호환"
+          - "  - 단일 서버 제약"
+          - "다음 강의: lecture24 - Octavia Load Balancer"

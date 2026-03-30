@@ -13,6 +13,7 @@
     requirements_file: "{{ workspace_root }}/requirements-codespaces.txt"
     openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
     mock_keystone_port: 15000
+    validate_full_infra: true
     deploy_nginx_on_computes: true
     compute_target_names:
       - compute1
@@ -127,6 +128,13 @@
       when:
         - deploy_nginx_on_computes | bool
         - is_mock_openstack_env | bool
+
+    - name: Disable remote nginx deployment when full infra validation is off
+      ansible.builtin.set_fact:
+        deploy_nginx_on_computes: false
+      when:
+        - deploy_nginx_on_computes | bool
+        - not (validate_full_infra | bool)
 
     - name: Print mock deployment notice
       ansible.builtin.debug:
@@ -331,6 +339,15 @@
           - "'vol-compute2' in (lecture21_volumes | map(attribute='Name') | list)"
         fail_msg: "compute 2대, neutron 분리 네트워크, cinder 볼륨 연결 검증에 실패했습니다."
         success_msg: "compute1/compute2 + neutron 분리 네트워크 + cinder 볼륨 연결 구성이 확인되었습니다."
+      when: validate_full_infra | bool
+
+    - name: Print partial validation notice when full infra check is disabled
+      ansible.builtin.debug:
+        msg:
+          - "validate_full_infra=false"
+          - "서버/볼륨 검증을 건너뛰고, Nova 서비스 점검과 네트워크 확인만 수행합니다."
+          - "실제 환경에서 compute 인스턴스가 필요하면 validate_full_infra=true로 실행하세요."
+      when: not (validate_full_infra | bool)
 
     - name: Print Horizon dashboard URL
       ansible.builtin.debug:
