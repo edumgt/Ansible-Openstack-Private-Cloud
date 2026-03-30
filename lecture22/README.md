@@ -10,6 +10,7 @@
 - Codespaces에서 `ansible-core`와 `python-openstackclient`를 준비한다.
 - 로컬 mock Keystone/Nova API를 실행한다.
 - `lecture21`에서 재사용할 `openrc` 파일을 생성한다.
+- 기존 Apache/Keystone와 충돌하지 않도록 mock API는 `15000~15004` 중 사용 가능한 포트를 자동 선택한다.
 
 ## 3. 실행 전 체크
 - Codespaces 또는 devcontainer 환경 진입
@@ -41,12 +42,12 @@ ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -
 ## 6. 결과 확인 기준
 - `PLAY RECAP` 기준 `failed=0`
 - `.venv/bin/openstack --version` 출력 정상
-- `http://127.0.0.1:5000/healthz` 응답 정상
+- 선택된 포트의 `/healthz` 응답 정상
 - `.lab/keystone-admin-openrc` 파일 생성 확인
 
 ## 7. 트러블슈팅 힌트
 - `openstack` 명령 없음: `bash .devcontainer/post-create.sh` 또는 `install_enabled=true` 재실행
-- 포트 5000 사용 중: `.lab/openstack-mock/server.pid` 확인 후 `scripts/stop_mock_openstack.sh` 실행
+- mock 포트 충돌: `.lab/openstack-mock/server.pid` 확인 후 `scripts/stop_mock_openstack.sh` 실행
 - mock 서버 비정상: `.lab/openstack-mock/server.log` 확인
 
 ## 8. 참고 파일

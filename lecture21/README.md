@@ -15,6 +15,7 @@
 - `lecture22`를 먼저 실행해 mock 환경 또는 인증 정보를 준비
 - `.venv/bin/openstack` 설치 여부 확인
 - 인벤토리 파일 확인: `ansible/inventories/local/hosts.ini`
+- mock 환경 기본 인증 엔드포인트는 `http://127.0.0.1:15000/v3`
 
 ## 4. 실습 절차
 1. Keystone 엔드포인트 응답을 확인한다.

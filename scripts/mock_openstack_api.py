@@ -144,85 +144,6 @@ def nova_hypervisors_doc() -> dict:
     }
 
 
-def mock_server_doc() -> dict:
-    return {
-        "id": SERVER_ID,
-        "name": "vm-demo-01",
-        "status": "ACTIVE",
-        "tenant_id": "project-admin",
-        "user_id": "user-admin",
-        "hostId": "mock-host-id",
-        "created": "2026-03-30T12:00:00Z",
-        "updated": "2026-03-30T12:00:00Z",
-        "OS-EXT-STS:vm_state": "active",
-        "OS-EXT-STS:power_state": 1,
-        "OS-EXT-STS:task_state": None,
-        "OS-EXT-SRV-ATTR:host": "compute1",
-        "OS-EXT-SRV-ATTR:hypervisor_hostname": "compute1",
-        "addresses": {
-            "private": [
-                {
-                    "OS-EXT-IPS:type": "fixed",
-                    "addr": "10.0.0.21",
-                    "version": 4,
-                }
-            ]
-        },
-        "image": {"id": IMAGE_ID},
-        "flavor": {"id": "m1.small"},
-        "metadata": {},
-    }
-
-
-def nova_servers_doc(name: str | None = None) -> dict:
-    server = mock_server_doc()
-    if name and server["name"] != name:
-        return {"servers": []}
-    return {"servers": [server]}
-
-
-def glance_versions_doc(host: str, keystone_port: int) -> dict:
-    base = f"http://{host}:{keystone_port}/v2"
-    return {
-        "versions": [
-            {
-                "id": "v2.15",
-                "status": "CURRENT",
-                "links": [{"rel": "self", "href": base}],
-            }
-        ]
-    }
-
-
-def glance_images_doc() -> dict:
-    return {
-        "images": [
-            {
-                "id": IMAGE_ID,
-                "name": "ubuntu-22.04",
-                "status": "active",
-                "visibility": "public",
-                "disk_format": "qcow2",
-                "container_format": "bare",
-            }
-        ]
-    }
-
-
-def glance_image_doc(image_id: str) -> tuple[int, dict]:
-    if image_id != IMAGE_ID:
-        return 404, {"error": {"message": f"Image not found: {image_id}"}}
-
-    return 200, {
-        "id": IMAGE_ID,
-        "name": "ubuntu-22.04",
-        "status": "active",
-        "visibility": "public",
-        "disk_format": "qcow2",
-        "container_format": "bare",
-    }
-
-
 class MockOpenStackHandler(BaseHTTPRequestHandler):
     host = "127.0.0.1"
     keystone_port = 5000
@@ -236,6 +157,14 @@ class MockOpenStackHandler(BaseHTTPRequestHandler):
         if headers:
             for key, value in headers.items():
                 self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_html(self, status: int, html: str) -> None:
+        body = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
@@ -260,7 +189,7 @@ class MockOpenStackHandler(BaseHTTPRequestHandler):
             )
             return
 
-        if path == "/v3":
+        if self.path == "/v3":
             self._send_json(200, keystone_version_doc(self.host, self.keystone_port))
             return
 
@@ -317,6 +246,10 @@ class MockOpenStackHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": {"message": f"Path not found: {self.path}"}})
 
 
+class ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
@@ -328,7 +261,7 @@ def main() -> None:
     MockOpenStackHandler.keystone_port = args.keystone_port
     MockOpenStackHandler.nova_port = args.nova_port
 
-    server = ThreadingHTTPServer((args.host, args.keystone_port), MockOpenStackHandler)
+    server = ReusableThreadingHTTPServer((args.host, args.keystone_port), MockOpenStackHandler)
     server.serve_forever()
 
 
