@@ -10,9 +10,10 @@ lecture:
   - nova
   - cli
   - validation
+  - codespaces
 prerequisites:
-- lecture19 완료
-- OpenStack 인증 정보 또는 clouds.yaml 준비
+- lecture22 완료
+- OpenStack 인증 정보 또는 mock openrc 준비
 - Linux 기본 명령어(ls, cat, systemctl) 사용 가능
 learning_objectives:
 - OpenStack CLI의 기본 연결 상태를 점검한다.
@@ -27,24 +28,21 @@ tech_stack:
   required:
   - ansible-core
   - python3
+  - python-openstackclient
   - yaml
   optional:
   - openstack
   - nova
-  - python-openstackclient
+  - codespaces
 installation_plan:
   target_inventory: ../ansible/inventories/local/hosts.ini
   target_host_group: all
   approach:
-  - install_enabled=true일 때 OpenStack CLI 패키지를 설치
-  - install_enabled=false일 때는 점검 태스크만 수행
+  - install_enabled=true일 때 workspace venv에 Python 패키지를 설치
+  - install_enabled=false일 때는 인증과 Nova 조회를 점검
   packages:
-  - python3
-  - python3-pip
-  - git
-  - curl
-  - jq
-  - python3-openstackclient
+  - ansible-core
+  - python-openstackclient
 ansible_lab:
   lecture_playbook: ./playbook.yml
   reference_playbook: ../ansible/playbooks/00_ping.yml

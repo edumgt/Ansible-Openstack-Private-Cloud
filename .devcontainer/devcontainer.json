@@ -1,0 +1,19 @@
+{
+  "name": "ansible-openstack-lab",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-python.python",
+        "redhat.ansible",
+        "yzhang.markdown-all-in-one"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

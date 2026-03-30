@@ -50,3 +50,4 @@ packer/packer_cache/
 *.ovf
 offline/pip-wheels/
 offline/collections/
+.lab/

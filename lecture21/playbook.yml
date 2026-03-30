@@ -1,22 +1,18 @@
 ---
 - name: "OpenStack/Nova 기본 점검"
   hosts: all
-  become: true
+  become: false
   gather_facts: true
   vars:
     lecture_id: "lecture21"
     lecture_title: "OpenStack/Nova 기본 점검"
     install_enabled: false
-    use_dummy_openstack_auth: true
     reference_playbook: "../ansible/playbooks/00_ping.yml"
-    lecture_packages:
-      - python3
-      - python3-pip
-      - git
-      - curl
-      - jq
-      - python3-openstackclient
-    openstack_dummy_auth:
+    workspace_root: "{{ playbook_dir }}/.."
+    codespaces_venv_path: "{{ workspace_root }}/.venv"
+    requirements_file: "{{ workspace_root }}/requirements-codespaces.txt"
+    use_mock_openstack_auth: true
+    openstack_mock_auth:
       OS_AUTH_URL: "http://127.0.0.1:5000/v3"
       OS_USERNAME: "admin"
       OS_PASSWORD: "123456"
@@ -28,15 +24,15 @@
       OS_IDENTITY_API_VERSION: "3"
     openstack_cli_env:
       OS_CLOUD: "{{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
-      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') | default((openstack_dummy_auth.OS_AUTH_URL if use_dummy_openstack_auth else ''), true) }}"
-      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') | default((openstack_dummy_auth.OS_USERNAME if use_dummy_openstack_auth else ''), true) }}"
-      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') | default((openstack_dummy_auth.OS_PASSWORD if use_dummy_openstack_auth else ''), true) }}"
-      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') | default((openstack_dummy_auth.OS_PROJECT_NAME if use_dummy_openstack_auth else ''), true) }}"
-      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') | default((openstack_dummy_auth.OS_USER_DOMAIN_NAME if use_dummy_openstack_auth else ''), true) }}"
-      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') | default((openstack_dummy_auth.OS_PROJECT_DOMAIN_NAME if use_dummy_openstack_auth else ''), true) }}"
-      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') | default((openstack_dummy_auth.OS_REGION_NAME if use_dummy_openstack_auth else ''), true) }}"
-      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') | default((openstack_dummy_auth.OS_INTERFACE if use_dummy_openstack_auth else ''), true) }}"
-      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') | default((openstack_dummy_auth.OS_IDENTITY_API_VERSION if use_dummy_openstack_auth else ''), true) }}"
+      OS_AUTH_URL: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') | default((openstack_mock_auth.OS_AUTH_URL if use_mock_openstack_auth else ''), true) }}"
+      OS_USERNAME: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') | default((openstack_mock_auth.OS_USERNAME if use_mock_openstack_auth else ''), true) }}"
+      OS_PASSWORD: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') | default((openstack_mock_auth.OS_PASSWORD if use_mock_openstack_auth else ''), true) }}"
+      OS_PROJECT_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') | default((openstack_mock_auth.OS_PROJECT_NAME if use_mock_openstack_auth else ''), true) }}"
+      OS_USER_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') | default((openstack_mock_auth.OS_USER_DOMAIN_NAME if use_mock_openstack_auth else ''), true) }}"
+      OS_PROJECT_DOMAIN_NAME: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') | default((openstack_mock_auth.OS_PROJECT_DOMAIN_NAME if use_mock_openstack_auth else ''), true) }}"
+      OS_REGION_NAME: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') | default((openstack_mock_auth.OS_REGION_NAME if use_mock_openstack_auth else ''), true) }}"
+      OS_INTERFACE: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') | default((openstack_mock_auth.OS_INTERFACE if use_mock_openstack_auth else ''), true) }}"
+      OS_IDENTITY_API_VERSION: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') | default((openstack_mock_auth.OS_IDENTITY_API_VERSION if use_mock_openstack_auth else ''), true) }}"
   tasks:
     - name: Show lecture context
       ansible.builtin.debug:
@@ -45,15 +41,14 @@
           - "title={{ lecture_title }}"
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
-          - "use_dummy_openstack_auth={{ use_dummy_openstack_auth }}"
-          - "os_cloud={{ lookup('ansible.builtin.env', 'OS_CLOUD') | default('', true) }}"
+          - "use_mock_openstack_auth={{ use_mock_openstack_auth }}"
           - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
-          - "os_auth_url_set={{ (openstack_cli_env.OS_AUTH_URL | default('', true) | length) > 0 }}"
 
-    - name: Install lecture packages when enabled
-      ansible.builtin.package:
-        name: "{{ lecture_packages }}"
-        state: present
+    - name: Install Codespaces practice packages when enabled
+      ansible.builtin.pip:
+        requirements: "{{ requirements_file }}"
+        virtualenv: "{{ codespaces_venv_path }}"
+        virtualenv_command: "python3 -m venv"
       when: install_enabled | bool
 
     - name: Check Python3 availability
@@ -66,8 +61,22 @@
       ansible.builtin.debug:
         var: python_version.stdout
 
+    - name: Check mock Keystone endpoint
+      ansible.builtin.uri:
+        url: "{{ openstack_cli_env.OS_AUTH_URL }}"
+        return_content: true
+      register: keystone_endpoint_check
+      changed_when: false
+      failed_when: false
+
+    - name: Print mock Keystone summary
+      ansible.builtin.debug:
+        msg:
+          - "keystone_http_status={{ keystone_endpoint_check.status | default('n/a', true) }}"
+          - "keystone_endpoint_ok={{ keystone_endpoint_check.status == 200 if keystone_endpoint_check.status is defined else false }}"
+
     - name: Check OpenStack CLI availability
-      ansible.builtin.command: openstack --version
+      ansible.builtin.command: "{{ codespaces_venv_path }}/bin/openstack --version"
       register: openstack_version
       changed_when: false
       failed_when: false
@@ -81,7 +90,7 @@
     - name: Check OpenStack token issue
       ansible.builtin.command:
         argv:
-          - openstack
+          - "{{ codespaces_venv_path }}/bin/openstack"
           - token
           - issue
           - -f
@@ -102,7 +111,7 @@
     - name: Check Nova compute services
       ansible.builtin.command:
         argv:
-          - openstack
+          - "{{ codespaces_venv_path }}/bin/openstack"
           - compute
           - service
           - list
@@ -130,13 +139,13 @@
     - name: Check Nova hypervisors
       ansible.builtin.command:
         argv:
-          - openstack
+          - "{{ codespaces_venv_path }}/bin/openstack"
           - hypervisor
           - list
           - -f
           - value
           - -c
-          - Hypervisor Hostname
+          - 'Hypervisor Hostname'
           - -c
           - State
           - -c
