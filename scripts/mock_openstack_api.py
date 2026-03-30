@@ -2,9 +2,12 @@
 import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 
 TOKEN_ID = "mock-token"
+IMAGE_ID = "f4f7b26d-2be8-4f10-9c95-9c3a7f6f51bf"
+SERVER_ID = "2f8cf7bb-1472-46f8-9f08-9f2a8d3e44cc"
 
 
 def keystone_version_doc(host: str, keystone_port: int) -> dict:
@@ -55,6 +58,19 @@ def token_doc(host: str, keystone_port: int, nova_port: int) -> dict:
                             "interface": "public",
                             "region": "RegionOne",
                             "url": f"http://{host}:{keystone_port}/v2.1",
+                        }
+                    ],
+                },
+                {
+                    "id": "service-glance",
+                    "type": "image",
+                    "name": "glance",
+                    "endpoints": [
+                        {
+                            "id": "endpoint-glance-public",
+                            "interface": "public",
+                            "region": "RegionOne",
+                            "url": f"http://{host}:{keystone_port}/v2",
                         }
                     ],
                 },
@@ -128,6 +144,85 @@ def nova_hypervisors_doc() -> dict:
     }
 
 
+def mock_server_doc() -> dict:
+    return {
+        "id": SERVER_ID,
+        "name": "vm-demo-01",
+        "status": "ACTIVE",
+        "tenant_id": "project-admin",
+        "user_id": "user-admin",
+        "hostId": "mock-host-id",
+        "created": "2026-03-30T12:00:00Z",
+        "updated": "2026-03-30T12:00:00Z",
+        "OS-EXT-STS:vm_state": "active",
+        "OS-EXT-STS:power_state": 1,
+        "OS-EXT-STS:task_state": None,
+        "OS-EXT-SRV-ATTR:host": "compute1",
+        "OS-EXT-SRV-ATTR:hypervisor_hostname": "compute1",
+        "addresses": {
+            "private": [
+                {
+                    "OS-EXT-IPS:type": "fixed",
+                    "addr": "10.0.0.21",
+                    "version": 4,
+                }
+            ]
+        },
+        "image": {"id": IMAGE_ID},
+        "flavor": {"id": "m1.small"},
+        "metadata": {},
+    }
+
+
+def nova_servers_doc(name: str | None = None) -> dict:
+    server = mock_server_doc()
+    if name and server["name"] != name:
+        return {"servers": []}
+    return {"servers": [server]}
+
+
+def glance_versions_doc(host: str, keystone_port: int) -> dict:
+    base = f"http://{host}:{keystone_port}/v2"
+    return {
+        "versions": [
+            {
+                "id": "v2.15",
+                "status": "CURRENT",
+                "links": [{"rel": "self", "href": base}],
+            }
+        ]
+    }
+
+
+def glance_images_doc() -> dict:
+    return {
+        "images": [
+            {
+                "id": IMAGE_ID,
+                "name": "ubuntu-22.04",
+                "status": "active",
+                "visibility": "public",
+                "disk_format": "qcow2",
+                "container_format": "bare",
+            }
+        ]
+    }
+
+
+def glance_image_doc(image_id: str) -> tuple[int, dict]:
+    if image_id != IMAGE_ID:
+        return 404, {"error": {"message": f"Image not found: {image_id}"}}
+
+    return 200, {
+        "id": IMAGE_ID,
+        "name": "ubuntu-22.04",
+        "status": "active",
+        "visibility": "public",
+        "disk_format": "qcow2",
+        "container_format": "bare",
+    }
+
+
 class MockOpenStackHandler(BaseHTTPRequestHandler):
     host = "127.0.0.1"
     keystone_port = 5000
@@ -148,7 +243,11 @@ class MockOpenStackHandler(BaseHTTPRequestHandler):
         return
 
     def do_GET(self) -> None:
-        if self.path in ["/healthz", "/"]:
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+
+        if path in ["/healthz", "/"]:
             self._send_json(
                 200,
                 {
@@ -161,20 +260,47 @@ class MockOpenStackHandler(BaseHTTPRequestHandler):
             )
             return
 
-        if self.path == "/v3":
+        if path == "/v3":
             self._send_json(200, keystone_version_doc(self.host, self.keystone_port))
             return
 
-        if self.path in ["/v2.1", "/v2.1/"]:
+        if path in ["/v2.1", "/v2.1/"]:
             self._send_json(200, nova_version_doc(self.host, self.nova_port))
             return
 
-        if self.path in ["/v2.1/os-services", "/v2.1/os-services/"]:
+        if path in ["/v2.1/os-services", "/v2.1/os-services/"]:
             self._send_json(200, nova_services_doc())
             return
 
-        if self.path in ["/v2.1/os-hypervisors/detail", "/v2.1/os-hypervisors/detail/", "/v2.1/os-hypervisors", "/v2.1/os-hypervisors/"]:
+        if path in ["/v2.1/os-hypervisors/detail", "/v2.1/os-hypervisors/detail/", "/v2.1/os-hypervisors", "/v2.1/os-hypervisors/"]:
             self._send_json(200, nova_hypervisors_doc())
+            return
+
+        if path in ["/v2.1/servers", "/v2.1/servers/", "/v2.1/servers/detail", "/v2.1/servers/detail/"]:
+            name = query.get("name", [None])[0]
+            self._send_json(200, nova_servers_doc(name=name))
+            return
+
+        if path.startswith("/v2.1/servers/"):
+            server_id = path.strip("/").split("/")[-1]
+            if server_id == SERVER_ID:
+                self._send_json(200, {"server": mock_server_doc()})
+                return
+            self._send_json(404, {"error": {"message": f"Server not found: {server_id}"}})
+            return
+
+        if path in ["/v2", "/v2/"]:
+            self._send_json(200, glance_versions_doc(self.host, self.keystone_port))
+            return
+
+        if path in ["/v2/images", "/v2/images/"]:
+            self._send_json(200, glance_images_doc())
+            return
+
+        if path.startswith("/v2/images/"):
+            image_id = path.strip("/").split("/")[-1]
+            status, payload = glance_image_doc(image_id)
+            self._send_json(status, payload)
             return
 
         self._send_json(404, {"error": {"message": f"Path not found: {self.path}"}})
