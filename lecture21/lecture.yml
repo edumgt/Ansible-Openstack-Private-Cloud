@@ -19,10 +19,12 @@ learning_objectives:
 - OpenStack CLI의 기본 연결 상태를 점검한다.
 - Nova 서비스 목록과 하이퍼바이저 상태를 빠르게 확인한다.
 - 인증 실패와 서비스 장애 출력을 구분해 읽는다.
+- compute1, compute2에 Ansible로 nginx를 배포한다.
+- 80 포트 HTTP 응답으로 배포 결과를 검증한다.
 curriculum:
   session_flow:
   - 오프닝 5분: 인증 정보와 목표 확인
-  - 핵심 실습 20분: playbook 실행 및 결과 검토
+  - 핵심 실습 20분: playbook 실행 및 nginx 배포 결과 검토
   - 회고 5분: 실패 원인과 다음 점검 항목 정리
 tech_stack:
   required:

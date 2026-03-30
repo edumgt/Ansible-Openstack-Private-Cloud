@@ -1,19 +1,30 @@
 ---
-- name: "종합 캡스톤: OpenStack 운영 Runbook 완성"
+- name: "실제 OpenStack 운영 Runbook 검증"
   hosts: all
   become: true
   gather_facts: true
   vars:
     lecture_id: "lecture20"
-    lecture_title: "종합 캡스톤: OpenStack 운영 Runbook 완성"
+    lecture_title: "실제 OpenStack 운영 Runbook 검증"
     install_enabled: false
     reference_playbook: "../ansible/playbooks/00_ping.yml"
+    workspace_root: "{{ playbook_dir }}/.."
+    lab_dir: "{{ workspace_root }}/.lab"
+    openstack_cli_venv_path: "{{ workspace_root }}/.venv"
+    real_openrc_path: "{{ lab_dir }}/real-openstack-openrc"
+    run_lecture21_validation: false
+    lecture21_playbook_path: "{{ workspace_root }}/lecture21/playbook.yml"
+    lecture21_inventory_path: "{{ workspace_root }}/ansible/inventories/local/hosts.ini"
+    lecture21_compute_ssh_user: "ubuntu"
+    lecture21_compute_ssh_private_key_file: "{{ lookup('ansible.builtin.env', 'OPENSTACK_SSH_KEY_PATH') | default('', true) }}"
     lecture_packages:
       - python3
       - python3-pip
+      - python3-venv
       - git
       - curl
       - jq
+    openrc_exists: false
   tasks:
     - name: Show lecture context
       ansible.builtin.debug:
@@ -22,12 +33,30 @@
           - "title={{ lecture_title }}"
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
+          - "real_openrc_path={{ real_openrc_path }}"
+          - "run_lecture21_validation={{ run_lecture21_validation }}"
 
     - name: Install lecture packages when enabled
       ansible.builtin.package:
         name: "{{ lecture_packages }}"
         state: present
       when: install_enabled | bool
+
+    - name: Check real OpenStack openrc presence
+      ansible.builtin.stat:
+        path: "{{ real_openrc_path }}"
+      register: real_openrc_stat
+
+    - name: Update openrc presence fact
+      ansible.builtin.set_fact:
+        openrc_exists: "{{ real_openrc_stat.stat.exists }}"
+
+    - name: Assert real openrc exists
+      ansible.builtin.assert:
+        that:
+          - openrc_exists | bool
+        fail_msg: "실제 OpenStack용 openrc가 없습니다. 먼저 lecture19/playbook.yml로 real-openstack-openrc를 생성하세요."
+        success_msg: "real-openstack-openrc 준비가 확인되었습니다."
 
     - name: Check Python3 availability
       ansible.builtin.command: python3 --version
@@ -38,3 +67,123 @@
     - name: Print Python3 version
       ansible.builtin.debug:
         var: python_version.stdout
+
+    - name: Check OpenStack CLI availability
+      ansible.builtin.command: "{{ openstack_cli_venv_path }}/bin/openstack --version"
+      register: openstack_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack CLI summary
+      ansible.builtin.debug:
+        msg:
+          - "openstack_rc={{ openstack_version.rc }}"
+          - "openstack={{ openstack_version.stdout | default(openstack_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Validate OpenStack token
+      ansible.builtin.shell: |
+        set -a
+        source "{{ real_openrc_path }}"
+        set +a
+        "{{ openstack_cli_venv_path }}/bin/openstack" token issue -f yaml
+      args:
+        executable: /bin/bash
+      register: token_issue
+      changed_when: false
+      failed_when: false
+
+    - name: List OpenStack endpoints
+      ansible.builtin.shell: |
+        set -a
+        source "{{ real_openrc_path }}"
+        set +a
+        "{{ openstack_cli_venv_path }}/bin/openstack" endpoint list -f yaml
+      args:
+        executable: /bin/bash
+      register: endpoint_list
+      changed_when: false
+      failed_when: false
+
+    - name: List OpenStack servers
+      ansible.builtin.shell: |
+        set -a
+        source "{{ real_openrc_path }}"
+        set +a
+        "{{ openstack_cli_venv_path }}/bin/openstack" server list -f yaml
+      args:
+        executable: /bin/bash
+      register: server_list
+      changed_when: false
+      failed_when: false
+
+    - name: List external networks
+      ansible.builtin.shell: |
+        set -a
+        source "{{ real_openrc_path }}"
+        set +a
+        "{{ openstack_cli_venv_path }}/bin/openstack" network list --external -f yaml
+      args:
+        executable: /bin/bash
+      register: external_networks
+      changed_when: false
+      failed_when: false
+
+    - name: List floating IPs
+      ansible.builtin.shell: |
+        set -a
+        source "{{ real_openrc_path }}"
+        set +a
+        "{{ openstack_cli_venv_path }}/bin/openstack" floating ip list -f yaml
+      args:
+        executable: /bin/bash
+      register: floating_ips
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack validation summary
+      ansible.builtin.debug:
+        msg:
+          - "token_rc={{ token_issue.rc }}"
+          - "endpoint_rc={{ endpoint_list.rc }}"
+          - "server_rc={{ server_list.rc }}"
+          - "external_network_rc={{ external_networks.rc }}"
+          - "floating_ip_rc={{ floating_ips.rc }}"
+          - "token_result={{ token_issue.stdout | default(token_issue.stderr, true) | default('n/a', true) }}"
+
+    - name: Run lecture21 validation when enabled
+      ansible.builtin.command:
+        argv:
+          - "{{ openstack_cli_venv_path }}/bin/ansible-playbook"
+          - -i
+          - "{{ lecture21_inventory_path }}"
+          - "{{ lecture21_playbook_path }}"
+          - -e
+          - "install_enabled=false"
+          - -e
+          - "openrc_path={{ real_openrc_path }}"
+          - -e
+          - "use_mock_openstack_auth=false"
+          - -e
+          - "compute_ssh_user={{ lecture21_compute_ssh_user }}"
+          - -e
+          - "compute_ssh_private_key_file={{ lecture21_compute_ssh_private_key_file }}"
+      register: lecture21_run
+      changed_when: false
+      failed_when: false
+      when: run_lecture21_validation | bool
+
+    - name: Print lecture21 run summary
+      ansible.builtin.debug:
+        msg:
+          - "lecture21_validation_ran={{ run_lecture21_validation }}"
+          - "lecture21_rc={{ lecture21_run.rc | default('n/a') }}"
+          - "lecture21_result={{ lecture21_run.stdout | default(lecture21_run.stderr, true) | default('not-run', true) }}"
+      when: run_lecture21_validation | bool
+
+    - name: Print next step guide
+      ansible.builtin.debug:
+        msg:
+          - "source {{ real_openrc_path }}"
+          - "{{ openstack_cli_venv_path }}/bin/openstack endpoint list"
+          - "{{ openstack_cli_venv_path }}/bin/openstack server list"
+          - "ansible-playbook -i ansible/inventories/local/hosts.ini lecture21/playbook.yml -e openrc_path={{ real_openrc_path }} -e use_mock_openstack_auth=false"

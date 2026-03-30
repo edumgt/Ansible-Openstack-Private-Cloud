@@ -1,0 +1,145 @@
+---
+- name: Prepare Ubuntu host for DevStack
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    devstack_user: stack
+    devstack_group: stack
+    devstack_home: "/opt/devstack"
+    devstack_repo: "https://opendev.org/openstack/devstack"
+    devstack_branch: stable/2024.2
+    devstack_host_ip: >-
+      {{
+        ansible_default_ipv4.address
+        if (ansible_host | default('', true)) in ['', 'local', '127.0.0.1', 'localhost']
+        else ansible_host
+      }}
+    devstack_service_host: "{{ devstack_host_ip }}"
+    devstack_admin_password: "123456"
+    devstack_database_password: "{{ devstack_admin_password }}"
+    devstack_rabbit_password: "{{ devstack_admin_password }}"
+    devstack_service_password: "{{ devstack_admin_password }}"
+    devstack_log_dir: /opt/stack/logs
+    devstack_enabled_services: "key,mysql,rabbit,etcd3,n-api,n-cpu,n-cond,n-sch,n-novnc,g-api,g-reg,q-svc,q-dhcp,q-ovn-metadata-agent,ovn-controller,ovn-northd,ovs-vswitchd,ovsdb-server,horizon,c-api,c-sch,c-vol,placement-api"
+    devstack_pip_upper_constraints: false
+    devstack_packages:
+      - git
+      - curl
+      - sudo
+      - qemu-kvm
+      - libvirt-daemon-system
+      - libvirt-clients
+      - bridge-utils
+      - python3-dev
+      - python3-pip
+      - python3-venv
+      - libffi-dev
+      - libssl-dev
+      - pkg-config
+      - gcc
+      - g++
+      - make
+      - net-tools
+      - iptables
+  tasks:
+    - name: Assert Ubuntu/Debian host
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.os_family == "Debian"
+        fail_msg: "DevStack 준비 플레이북은 Ubuntu/Debian 호스트 기준으로 작성되어 있습니다."
+        success_msg: "Ubuntu/Debian 호스트가 확인되었습니다."
+
+    - name: Install DevStack prerequisite packages
+      ansible.builtin.apt:
+        name: "{{ devstack_packages }}"
+        state: present
+        update_cache: true
+
+    - name: Ensure stack group exists
+      ansible.builtin.group:
+        name: "{{ devstack_group }}"
+        state: present
+
+    - name: Ensure stack user exists
+      ansible.builtin.user:
+        name: "{{ devstack_user }}"
+        group: "{{ devstack_group }}"
+        home: "{{ devstack_home }}"
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Allow stack user passwordless sudo
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/99-{{ devstack_user }}"
+        mode: "0440"
+        content: |
+          {{ devstack_user }} ALL=(ALL) NOPASSWD: ALL
+
+    - name: Ensure DevStack home permissions
+      ansible.builtin.file:
+        path: "{{ devstack_home }}"
+        state: directory
+        owner: "{{ devstack_user }}"
+        group: "{{ devstack_group }}"
+        mode: "0755"
+
+    - name: Clone DevStack repository
+      ansible.builtin.git:
+        repo: "{{ devstack_repo }}"
+        dest: "{{ devstack_home }}/devstack"
+        version: "{{ devstack_branch }}"
+        update: true
+      become_user: "{{ devstack_user }}"
+
+    - name: Write DevStack local.conf
+      ansible.builtin.copy:
+        dest: "{{ devstack_home }}/devstack/local.conf"
+        owner: "{{ devstack_user }}"
+        group: "{{ devstack_group }}"
+        mode: "0644"
+        content: |
+          [[local|localrc]]
+          ADMIN_PASSWORD={{ devstack_admin_password }}
+          DATABASE_PASSWORD={{ devstack_database_password }}
+          RABBIT_PASSWORD={{ devstack_rabbit_password }}
+          SERVICE_PASSWORD={{ devstack_service_password }}
+          HOST_IP={{ devstack_host_ip }}
+          SERVICE_HOST={{ devstack_service_host }}
+          LOGFILE={{ devstack_log_dir }}/stack.sh.log
+          LOGDAYS=2
+          Q_AGENT=ovn
+          ENABLED_SERVICES={{ devstack_enabled_services }}
+          RECLONE=no
+          PIP_UPPER_CONSTRAINTS_FILE={{ '' if devstack_pip_upper_constraints else '/dev/null' }}
+
+    - name: Ensure stack log directory exists
+      ansible.builtin.file:
+        path: "{{ devstack_log_dir }}"
+        state: directory
+        owner: "{{ devstack_user }}"
+        group: "{{ devstack_group }}"
+        mode: "0755"
+
+    - name: Add stack user to libvirt group
+      ansible.builtin.user:
+        name: "{{ devstack_user }}"
+        groups: libvirt
+        append: true
+
+    - name: Enable libvirtd
+      ansible.builtin.service:
+        name: libvirtd
+        enabled: true
+        state: started
+      failed_when: false
+
+    - name: Print DevStack next steps
+      ansible.builtin.debug:
+        msg:
+          - "DevStack host prep complete on {{ inventory_hostname }}"
+          - "login_user={{ devstack_user }}"
+          - "repo={{ devstack_home }}/devstack"
+          - "run: sudo -iu {{ devstack_user }} bash -lc 'cd {{ devstack_home }}/devstack && ./stack.sh'"
+          - "expected Keystone URL after install: http://{{ devstack_host_ip }}:5000/v3"

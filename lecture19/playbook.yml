@@ -1,23 +1,45 @@
 ---
-- name: "Kolla Ansible 배포 준비와 검증"
+- name: "실제 OpenStack 클라이언트 환경 준비"
   hosts: all
   become: true
   gather_facts: true
   vars:
     lecture_id: "lecture19"
-    lecture_title: "Kolla Ansible 배포 준비와 검증"
+    lecture_title: "실제 OpenStack 클라이언트 환경 준비"
     install_enabled: false
-    helm_preflight_enabled: true
     reference_playbook: "../ansible/playbooks/10_docker_engine_install.yml"
+    workspace_root: "{{ playbook_dir }}/.."
+    lab_dir: "{{ workspace_root }}/.lab"
+    openstack_cli_venv_path: "{{ workspace_root }}/.venv"
+    real_openrc_path: "{{ lab_dir }}/real-openstack-openrc"
+    clouds_config_dir: "/root/.config/openstack"
+    clouds_yaml_path: "{{ clouds_config_dir }}/clouds.yaml"
+    openstack_auth_url: "{{ lookup('ansible.builtin.env', 'OS_AUTH_URL') | default('', true) }}"
+    openstack_username: "{{ lookup('ansible.builtin.env', 'OS_USERNAME') | default('', true) }}"
+    openstack_password: "{{ lookup('ansible.builtin.env', 'OS_PASSWORD') | default('', true) }}"
+    openstack_project_name: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_NAME') | default('', true) }}"
+    openstack_user_domain_name: "{{ lookup('ansible.builtin.env', 'OS_USER_DOMAIN_NAME') | default('Default', true) }}"
+    openstack_project_domain_name: "{{ lookup('ansible.builtin.env', 'OS_PROJECT_DOMAIN_NAME') | default('Default', true) }}"
+    openstack_region_name: "{{ lookup('ansible.builtin.env', 'OS_REGION_NAME') | default('RegionOne', true) }}"
+    openstack_interface: "{{ lookup('ansible.builtin.env', 'OS_INTERFACE') | default('public', true) }}"
+    openstack_identity_api_version: "{{ lookup('ansible.builtin.env', 'OS_IDENTITY_API_VERSION') | default('3', true) }}"
+    openstack_cloud_name: "lab-openstack"
     lecture_packages:
       - python3
       - python3-pip
+      - python3-venv
       - git
       - curl
       - jq
-      - docker.io
-      - apt-transport-https
       - ca-certificates
+      - openssh-client
+    openstack_auth_ready: >-
+      {{
+        (openstack_auth_url | length > 0)
+        and (openstack_username | length > 0)
+        and (openstack_password | length > 0)
+        and (openstack_project_name | length > 0)
+      }}
   tasks:
     - name: Show lecture context
       ansible.builtin.debug:
@@ -26,7 +48,11 @@
           - "title={{ lecture_title }}"
           - "reference_playbook={{ reference_playbook }}"
           - "install_enabled={{ install_enabled }}"
-          - "helm_preflight_enabled={{ helm_preflight_enabled }}"
+          - "workspace_root={{ workspace_root }}"
+          - "real_openrc_path={{ real_openrc_path }}"
+          - "clouds_yaml_path={{ clouds_yaml_path }}"
+          - "openstack_auth_url={{ openstack_auth_url | default('not-set', true) }}"
+          - "openstack_auth_ready={{ openstack_auth_ready }}"
 
     - name: Install lecture packages when enabled
       ansible.builtin.package:
@@ -34,28 +60,71 @@
         state: present
       when: install_enabled | bool
 
-    - name: Check kubectl availability (OpenStack-Helm preflight)
-      ansible.builtin.command: kubectl version --client --short
-      register: kubectl_version
-      changed_when: false
-      failed_when: false
-      when: helm_preflight_enabled | bool
+    - name: Ensure workspace lab directory exists
+      ansible.builtin.file:
+        path: "{{ lab_dir }}"
+        state: directory
+        mode: "0755"
 
-    - name: Check helm availability (OpenStack-Helm preflight)
-      ansible.builtin.command: helm version --short
-      register: helm_version
-      changed_when: false
-      failed_when: false
-      when: helm_preflight_enabled | bool
+    - name: Ensure OpenStack config directory exists
+      ansible.builtin.file:
+        path: "{{ clouds_config_dir }}"
+        state: directory
+        mode: "0700"
 
-    - name: Print OpenStack-Helm preflight summary
-      ansible.builtin.debug:
-        msg:
-          - "kubectl_rc={{ kubectl_version.rc | default('n/a') }}"
-          - "kubectl={{ kubectl_version.stdout | default(kubectl_version.stderr, true) | default('not-installed', true) }}"
-          - "helm_rc={{ helm_version.rc | default('n/a') }}"
-          - "helm={{ helm_version.stdout | default(helm_version.stderr, true) | default('not-installed', true) }}"
-      when: helm_preflight_enabled | bool
+    - name: Ensure CLI virtualenv exists when install is enabled
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -m
+          - venv
+          - "{{ openstack_cli_venv_path }}"
+      args:
+        creates: "{{ openstack_cli_venv_path }}/bin/activate"
+      when: install_enabled | bool
+
+    - name: Install python-openstackclient when enabled
+      ansible.builtin.pip:
+        name:
+          - python-openstackclient
+        virtualenv: "{{ openstack_cli_venv_path }}"
+        virtualenv_command: "python3 -m venv"
+      when: install_enabled | bool
+
+    - name: Write real OpenStack openrc
+      ansible.builtin.copy:
+        dest: "{{ real_openrc_path }}"
+        mode: "0600"
+        content: |
+          export OS_AUTH_URL={{ openstack_auth_url }}
+          export OS_USERNAME={{ openstack_username }}
+          export OS_PASSWORD={{ openstack_password }}
+          export OS_PROJECT_NAME={{ openstack_project_name }}
+          export OS_USER_DOMAIN_NAME={{ openstack_user_domain_name }}
+          export OS_PROJECT_DOMAIN_NAME={{ openstack_project_domain_name }}
+          export OS_REGION_NAME={{ openstack_region_name }}
+          export OS_INTERFACE={{ openstack_interface }}
+          export OS_IDENTITY_API_VERSION={{ openstack_identity_api_version }}
+      when: openstack_auth_ready | bool
+
+    - name: Write clouds.yaml for OpenStack client
+      ansible.builtin.copy:
+        dest: "{{ clouds_yaml_path }}"
+        mode: "0600"
+        content: |
+          clouds:
+            {{ openstack_cloud_name }}:
+              auth:
+                auth_url: {{ openstack_auth_url }}
+                username: {{ openstack_username }}
+                password: {{ openstack_password }}
+                project_name: {{ openstack_project_name }}
+                user_domain_name: {{ openstack_user_domain_name }}
+                project_domain_name: {{ openstack_project_domain_name }}
+              region_name: {{ openstack_region_name }}
+              interface: {{ openstack_interface }}
+              identity_api_version: {{ openstack_identity_api_version }}
+      when: openstack_auth_ready | bool
 
     - name: Check Python3 availability
       ansible.builtin.command: python3 --version
@@ -66,3 +135,53 @@
     - name: Print Python3 version
       ansible.builtin.debug:
         var: python_version.stdout
+
+    - name: Check OpenStack CLI availability in workspace venv
+      ansible.builtin.command: "{{ openstack_cli_venv_path }}/bin/openstack --version"
+      register: openstack_version
+      changed_when: false
+      failed_when: false
+
+    - name: Print OpenStack CLI summary
+      ansible.builtin.debug:
+        msg:
+          - "openstack_rc={{ openstack_version.rc }}"
+          - "openstack={{ openstack_version.stdout | default(openstack_version.stderr, true) | default('not-installed', true) }}"
+
+    - name: Check OpenStack token when credentials are ready
+      ansible.builtin.command:
+        argv:
+          - "{{ openstack_cli_venv_path }}/bin/openstack"
+          - token
+          - issue
+          - -f
+          - yaml
+      register: openstack_token_issue
+      changed_when: false
+      failed_when: false
+      when: openstack_auth_ready | bool
+      environment:
+        OS_AUTH_URL: "{{ openstack_auth_url }}"
+        OS_USERNAME: "{{ openstack_username }}"
+        OS_PASSWORD: "{{ openstack_password }}"
+        OS_PROJECT_NAME: "{{ openstack_project_name }}"
+        OS_USER_DOMAIN_NAME: "{{ openstack_user_domain_name }}"
+        OS_PROJECT_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
+        OS_REGION_NAME: "{{ openstack_region_name }}"
+        OS_INTERFACE: "{{ openstack_interface }}"
+        OS_IDENTITY_API_VERSION: "{{ openstack_identity_api_version }}"
+
+    - name: Print token check result
+      ansible.builtin.debug:
+        msg:
+          - "token_check_ran={{ openstack_auth_ready }}"
+          - "token_rc={{ openstack_token_issue.rc | default('n/a') }}"
+          - "token_result={{ openstack_token_issue.stdout | default(openstack_token_issue.stderr, true) | default('credentials-not-provided', true) }}"
+
+    - name: Print next step guide
+      ansible.builtin.debug:
+        msg:
+          - "source {{ real_openrc_path }}"
+          - "export OS_CLOUD={{ openstack_cloud_name }}"
+          - "{{ openstack_cli_venv_path }}/bin/openstack endpoint list"
+          - "ansible-playbook -i ansible/inventories/local/hosts.ini lecture20/playbook.yml -e install_enabled=false"

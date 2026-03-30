@@ -13,6 +13,17 @@
     requirements_file: "{{ workspace_root }}/requirements-codespaces.txt"
     openrc_path: "{{ workspace_root }}/.lab/keystone-admin-openrc"
     mock_keystone_port: 15000
+    deploy_nginx_on_computes: true
+    compute_target_names:
+      - compute1
+      - compute2
+    require_floating_ip_for_ssh: true
+    compute_access_ip_overrides: {}
+    compute_ssh_user: "ubuntu"
+    compute_ssh_private_key_file: "{{ lookup('ansible.builtin.env', 'OPENSTACK_SSH_KEY_PATH') | default('', true) }}"
+    compute_ssh_common_args: "{{ lookup('ansible.builtin.env', 'OPENSTACK_SSH_COMMON_ARGS') | default('', true) }}"
+    compute_wait_for_connection_timeout: 120
+    nginx_validation_timeout: 10
     use_mock_openstack_auth: true
     openstack_mock_auth:
       OS_AUTH_URL: "http://127.0.0.1:{{ mock_keystone_port }}/v3"
@@ -101,6 +112,29 @@
           - "openrc_path={{ openrc_path }}"
           - "openrc_exists={{ openrc_file.stat.exists }}"
           - "effective_os_auth_url={{ openstack_cli_env.OS_AUTH_URL | default('', true) }}"
+
+    - name: Detect mock OpenStack environment
+      ansible.builtin.set_fact:
+        is_mock_openstack_env: >-
+          {{
+            (openstack_cli_env.OS_AUTH_URL | default('', true)) is search('127\\.0\\.0\\.1')
+            or (openstack_cli_env.OS_AUTH_URL | default('', true)) is search('localhost')
+          }}
+
+    - name: Disable remote nginx deployment on mock OpenStack
+      ansible.builtin.set_fact:
+        deploy_nginx_on_computes: false
+      when:
+        - deploy_nginx_on_computes | bool
+        - is_mock_openstack_env | bool
+
+    - name: Print mock deployment notice
+      ansible.builtin.debug:
+        msg:
+          - "mock_openstack_detected=true"
+          - "floating IP API가 없는 mock 환경이므로 compute1/compute2 SSH 및 nginx 배포는 건너뜁니다."
+          - "실제 OpenStack openrc로 실행하면 floating IP 연결 후 nginx 배포 단계가 동작합니다."
+      when: is_mock_openstack_env | bool
 
     - name: Warn when legacy Keystone port is still in use
       ansible.builtin.debug:
@@ -226,55 +260,75 @@
           - "hypervisor_rc={{ nova_hypervisors.rc }}"
           - "hypervisors={{ nova_hypervisors.stdout_lines | default([nova_hypervisors.stderr | default('hypervisor-check-failed', true)], true) }}"
 
-    - name: Query Nova servers detail (compute1/compute2)
-      ansible.builtin.uri:
-        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v2.1/servers/detail') }}"
-        return_content: true
-      register: nova_servers_detail
+    - name: Query OpenStack servers
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - server
+          - list
+          - -f
+          - json
+      register: lecture21_server_list
       changed_when: false
       failed_when: false
+      environment: "{{ openstack_cli_env }}"
 
-    - name: Query Neutron networks
-      ansible.builtin.uri:
-        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v2.0/networks') }}"
-        return_content: true
-      register: neutron_networks
+    - name: Query OpenStack networks
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - network
+          - list
+          - -f
+          - json
+      register: lecture21_network_list
       changed_when: false
       failed_when: false
+      environment: "{{ openstack_cli_env }}"
 
-    - name: Query Cinder volumes detail
-      ansible.builtin.uri:
-        url: "{{ openstack_cli_env.OS_AUTH_URL | regex_replace('/v3$', '/v3/project-admin/volumes/detail') }}"
-        return_content: true
-      register: cinder_volumes
+    - name: Query OpenStack volumes
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - volume
+          - list
+          - -f
+          - json
+      register: lecture21_volume_list
       changed_when: false
       failed_when: false
+      environment: "{{ openstack_cli_env }}"
+
+    - name: Build lecture21 resource lists
+      ansible.builtin.set_fact:
+        lecture21_servers: "{{ (lecture21_server_list.stdout | default('[]', true)) | from_json }}"
+        lecture21_networks: "{{ (lecture21_network_list.stdout | default('[]', true)) | from_json }}"
+        lecture21_volumes: "{{ (lecture21_volume_list.stdout | default('[]', true)) | from_json }}"
 
     - name: Build lecture21 infra summary
       ansible.builtin.set_fact:
-        lecture21_servers: "{{ nova_servers_detail.json.servers | default([], true) }}"
-        lecture21_networks: "{{ neutron_networks.json.networks | default([], true) }}"
-        lecture21_volumes: "{{ cinder_volumes.json.volumes | default([], true) }}"
+        compute1_summary: "{{ (lecture21_servers | selectattr('Name', 'equalto', 'compute1') | list | first) | default({}, true) }}"
+        compute2_summary: "{{ (lecture21_servers | selectattr('Name', 'equalto', 'compute2') | list | first) | default({}, true) }}"
 
     - name: Print compute/network/storage summary
       ansible.builtin.debug:
         msg:
-          - "servers={{ lecture21_servers | map(attribute='name') | list }}"
-          - "networks={{ lecture21_networks | map(attribute='name') | list }}"
-          - "volumes={{ lecture21_volumes | map(attribute='name') | list }}"
-          - "compute1_network={{ (lecture21_servers | selectattr('name', 'equalto', 'compute1') | map(attribute='addresses') | list | first).keys() | list | first | default('n/a', true) }}"
-          - "compute2_network={{ (lecture21_servers | selectattr('name', 'equalto', 'compute2') | map(attribute='addresses') | list | first).keys() | list | first | default('n/a', true) }}"
+          - "servers={{ lecture21_servers | map(attribute='Name') | list }}"
+          - "networks={{ lecture21_networks | map(attribute='Name') | list }}"
+          - "volumes={{ lecture21_volumes | map(attribute='Name') | list }}"
+          - "compute1_network={{ (compute1_summary.Networks | default('n/a', true) | regex_replace('=.*$', '')) if (compute1_summary | length > 0) else 'n/a' }}"
+          - "compute2_network={{ (compute2_summary.Networks | default('n/a', true) | regex_replace('=.*$', '')) if (compute2_summary | length > 0) else 'n/a' }}"
 
     - name: Validate 2 computes and split network/storage design
       ansible.builtin.assert:
         that:
           - lecture21_servers | length >= 2
-          - "'compute1' in (lecture21_servers | map(attribute='name') | list)"
-          - "'compute2' in (lecture21_servers | map(attribute='name') | list)"
-          - "'net-compute1' in (lecture21_networks | map(attribute='name') | list)"
-          - "'net-compute2' in (lecture21_networks | map(attribute='name') | list)"
-          - "'vol-compute1' in (lecture21_volumes | map(attribute='name') | list)"
-          - "'vol-compute2' in (lecture21_volumes | map(attribute='name') | list)"
+          - "'compute1' in (lecture21_servers | map(attribute='Name') | list)"
+          - "'compute2' in (lecture21_servers | map(attribute='Name') | list)"
+          - "'net-compute1' in (lecture21_networks | map(attribute='Name') | list)"
+          - "'net-compute2' in (lecture21_networks | map(attribute='Name') | list)"
+          - "'vol-compute1' in (lecture21_volumes | map(attribute='Name') | list)"
+          - "'vol-compute2' in (lecture21_volumes | map(attribute='Name') | list)"
         fail_msg: "compute 2대, neutron 분리 네트워크, cinder 볼륨 연결 검증에 실패했습니다."
         success_msg: "compute1/compute2 + neutron 분리 네트워크 + cinder 볼륨 연결 구성이 확인되었습니다."
 
@@ -282,3 +336,181 @@
       ansible.builtin.debug:
         msg:
           - "horizon_dashboard=http://127.0.0.1:{{ mock_keystone_port }}/dashboard"
+      when: is_mock_openstack_env | bool
+
+    - name: Query compute target details
+      ansible.builtin.command:
+        argv:
+          - "{{ codespaces_venv_path }}/bin/openstack"
+          - server
+          - show
+          - "{{ item }}"
+          - -f
+          - json
+      register: lecture21_compute_server_show
+      changed_when: false
+      failed_when: false
+      environment: "{{ openstack_cli_env }}"
+      loop: "{{ compute_target_names }}"
+      when: deploy_nginx_on_computes | bool
+
+    - name: Build compute deployment targets
+      ansible.builtin.set_fact:
+        lecture21_compute_targets: "{{ lecture21_compute_targets | default([]) + [target_host] }}"
+      vars:
+        server_show: "{{ item.stdout | from_json }}"
+        server_addresses_text: "{{ server_show.addresses | default('', true) }}"
+        server_network_name: "{{ server_addresses_text | regex_replace('=.*$', '') | default('n/a', true) }}"
+        server_ip_text: "{{ (server_addresses_text.split('=', 1)[1] if ('=' in server_addresses_text) else '') | trim }}"
+        server_ip_list: "{{ server_ip_text.split(',') | map('trim') | reject('equalto', '') | list }}"
+        server_fixed_ip: "{{ server_ip_list | first | default('', true) }}"
+        server_floating_ip: "{{ server_ip_list[1] | default('', true) }}"
+        target_host:
+          name: "{{ server_show.name }}"
+          network_name: "{{ server_network_name }}"
+          fixed_ip: "{{ server_fixed_ip }}"
+          floating_ip: "{{ server_floating_ip }}"
+          access_ip: >-
+            {{
+              compute_access_ip_overrides[server_show.name]
+              | default(
+                  server_floating_ip
+                  | default(
+                      (server_fixed_ip if not require_floating_ip_for_ssh else ''),
+                      true
+                    ),
+                  true
+                )
+            }}
+      loop: >-
+        {{
+          lecture21_compute_server_show.results
+          | default([])
+          | selectattr('rc', 'equalto', 0)
+          | list
+        }}
+      when: deploy_nginx_on_computes | bool
+
+    - name: Print compute deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "deploy_nginx_on_computes={{ deploy_nginx_on_computes }}"
+          - "require_floating_ip_for_ssh={{ require_floating_ip_for_ssh }}"
+          - "compute_targets={{ lecture21_compute_targets | default([]) }}"
+      when: deploy_nginx_on_computes | bool
+
+    - name: Ensure compute access IPs exist
+      ansible.builtin.assert:
+        that:
+          - lecture21_compute_targets | default([]) | length == (compute_target_names | length)
+          - item.access_ip | length > 0
+        fail_msg: >-
+          {{ item.name }}의 SSH 접속 IP를 찾지 못했습니다.
+          현재 fixed_ip={{ item.fixed_ip | default('n/a', true) }},
+          floating_ip={{ item.floating_ip | default('n/a', true) }} 입니다.
+          floating IP를 연결하거나
+          -e 'compute_access_ip_overrides={\"{{ item.name }}\":\"접속가능IP\"}' 형태로 직접 지정하세요.
+        success_msg: "{{ item.name }} 접속 대상={{ item.access_ip }}"
+      loop: "{{ lecture21_compute_targets | default([]) }}"
+      when: deploy_nginx_on_computes | bool
+
+    - name: Register compute hosts for nginx deployment
+      ansible.builtin.add_host:
+        name: "{{ item.name }}"
+        groups: lecture21_openstack_computes
+        ansible_host: "{{ item.access_ip }}"
+        ansible_user: "{{ compute_ssh_user }}"
+        ansible_ssh_private_key_file: "{{ compute_ssh_private_key_file if (compute_ssh_private_key_file | length > 0) else omit }}"
+        ansible_ssh_common_args: "{{ compute_ssh_common_args if (compute_ssh_common_args | length > 0) else omit }}"
+        openstack_network_name: "{{ item.network_name }}"
+        openstack_fixed_ip: "{{ item.fixed_ip }}"
+        openstack_floating_ip: "{{ item.floating_ip }}"
+      loop: "{{ lecture21_compute_targets | default([]) }}"
+      when: deploy_nginx_on_computes | bool
+
+    - name: Print nginx deployment hint
+      ansible.builtin.debug:
+        msg:
+          - "ssh_user={{ compute_ssh_user }}"
+          - "ssh_key={{ compute_ssh_private_key_file | default('ssh-agent', true) }}"
+          - "targets={{ lecture21_compute_targets | map(attribute='name') | list | default([], true) }}"
+      when: deploy_nginx_on_computes | bool
+
+- name: "compute1/compute2 nginx 배포"
+  hosts: lecture21_openstack_computes
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Wait for compute SSH connection
+      ansible.builtin.wait_for_connection:
+        timeout: "{{ hostvars['localhost'].compute_wait_for_connection_timeout | default(120) }}"
+        sleep: 5
+
+    - name: Install nginx on Debian/Ubuntu
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Install nginx on RHEL/CentOS
+      ansible.builtin.yum:
+        name: nginx
+        state: present
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Ensure web root exists
+      ansible.builtin.file:
+        path: /var/www/html
+        state: directory
+        mode: "0755"
+
+    - name: Publish compute specific index page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        mode: "0644"
+        content: |
+          <html>
+          <head><title>{{ inventory_hostname }} nginx</title></head>
+          <body>
+          <h1>{{ inventory_hostname }} nginx ok</h1>
+          <p>network={{ hostvars[inventory_hostname].openstack_network_name | default('n/a', true) }}</p>
+          <p>fixed_ip={{ hostvars[inventory_hostname].openstack_fixed_ip | default('n/a', true) }}</p>
+          <p>floating_ip={{ hostvars[inventory_hostname].openstack_floating_ip | default('n/a', true) }}</p>
+          <p>served_by=lecture21/playbook.yml</p>
+          </body>
+          </html>
+
+    - name: Enable and start nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Verify HTTP on instance localhost
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:80/"
+        status_code: 200
+        return_content: true
+        timeout: "{{ hostvars['localhost'].nginx_validation_timeout | default(10) }}"
+      register: nginx_local_http
+      changed_when: false
+
+    - name: Verify HTTP on compute access IP from control node
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:80/"
+        status_code: 200
+        return_content: false
+        timeout: "{{ hostvars['localhost'].nginx_validation_timeout | default(10) }}"
+      register: nginx_remote_http
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Print nginx validation result
+      ansible.builtin.debug:
+        msg:
+          - "host={{ inventory_hostname }}"
+          - "ansible_host={{ ansible_host }}"
+          - "local_status={{ nginx_local_http.status }}"
+          - "remote_status={{ nginx_remote_http.status }}"
