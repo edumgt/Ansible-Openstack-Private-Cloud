@@ -30,6 +30,17 @@ nohup "${PYTHON_BIN}" "${WORKSPACE_ROOT}/scripts/mock_openstack_api.py" \
   --nova-port "${NOVA_PORT}" \
   >"${LOG_FILE}" 2>&1 &
 
-echo "$!" > "${PID_FILE}"
+PID="$!"
+echo "${PID}" > "${PID_FILE}"
 sleep 1
-echo "mock-openstack started"
+
+if ! kill -0 "${PID}" 2>/dev/null; then
+  echo "mock-openstack failed to start" >&2
+  if [[ -f "${LOG_FILE}" ]]; then
+    tail -n 50 "${LOG_FILE}" >&2 || true
+  fi
+  rm -f "${PID_FILE}"
+  exit 1
+fi
+
+echo "mock-openstack started pid=${PID} keystone_port=${KEYSTONE_PORT} nova_port=${NOVA_PORT}"
